@@ -1,6 +1,6 @@
 # A fully spectral kinematic match for droplet–bath impact: model formulation
 
-*Text and notation follow §3 of Alventosa, Cimpeanu & Harris (2023, *J. Fluid Mech.* **958**, A24; arXiv:2209.13276) with minimal edits. Their sentences are kept wherever the model is unchanged. The departures are: (i) the single-point match and the assumed pressure profile are replaced by a spectral pressure solved for over the whole contact region (§3.3–3.4); (ii) the bath radius $b$ is finite and the Fourier–Bessel normaliser is corrected; (iii) BDF2 replaces backward Euler, and an optional exact viscous closure replaces Lamb's for the droplet. Derivations and audits: `derivations/`.*
+*Text and notation follow §3 of Alventosa, Cimpeanu & Harris (2023, *J. Fluid Mech.* **958**, A24; arXiv:2209.13276) with minimal edits. Their sentences are kept wherever the model is unchanged. The departures are: (i) the single-point match and the assumed pressure profile are replaced by a spectral pressure solved for over the whole contact region (§3.3–3.4); (ii) the bath radius $b$ is kept as a model parameter of a few droplet radii (Alventosa et al. use the same cylinder with $b=25R$), the finite-radius derivation is written out (§3.1), and the Fourier–Bessel normaliser is corrected; (iii) BDF2 replaces backward Euler, and an optional exact viscous closure replaces Lamb's for the droplet. Derivations and audits: `derivations/`.*
 
 ## 3. Linearized quasi-potential fluid model
 
@@ -26,7 +26,13 @@ $$
 \eta(r,t)=\sum_{m=0}^{M}a_m(t)J_0(k_mr),\qquad\text{(3.6)}
 $$
 
-and re-write all of the unknowns, using (3.1) and (3.2), as functions of the time-varying amplitude coefficients $a_m(t)$. Substituting into the dynamic boundary condition (3.3) and projecting onto the basis, each wave mode in the bath is described by a forced, damped harmonic oscillator equation,
+Each $J_0(k_mr)$ satisfies $(\nabla^2+k_m^2)J_0=0$ and, because $J_0'(k_mb)=0$, the wall condition at every depth. Writing $\phi=\sum_m\phi_m(t)J_0(k_mr)Z_m(z)$, Laplace's equation (3.1) gives $Z_m''=k_m^2Z_m$, and the bottom condition (3.4) selects $Z_m=\cosh k_m(z+h_0)/(k_m\sinh k_mh_0)$, normalised so that $Z_m'(0)=1$. The kinematic condition (3.2) then fixes $\phi_m=\dot a_m+2\nu k_m^2a_m$, so
+
+$$
+\phi=\sum_{m=0}^{M}\big(\dot a_m+2\nu k_m^2a_m\big)J_0(k_mr)\,Z_m(z),\qquad \kappa=-\sum_{m=0}^{M}k_m^2a_mJ_0(k_mr).\qquad\text{(3.9)}
+$$
+
+The functions $J_0(k_mr)$ are orthogonal under the weight $r$ on $[0,b]$, with $\int_0^bJ_0(k_mr)^2\,r\,dr=\tfrac12b^2\big[J_0(k_mb)^2+J_1(k_mb)^2\big]=\tfrac12b^2J_0(k_mb)^2$ since $J_1(k_mb)=0$. Substituting (3.9) into the dynamic condition (3.3), using $\partial_z^2\phi=k_m^2\phi$ mode by mode, projecting onto $J_0(k_mr)$, multiplying by $k_m\tanh(k_mh_0)$ and dropping the $O(\nu^2)$ term $4\nu^2k_m^4a_m$ (consistent with the weakly viscous limit), each wave mode in the bath is described by a forced, damped harmonic oscillator equation,
 
 $$
 \ddot a_m+4\nu k_m^2\dot a_m+\Big(\sigma k_m^2/\rho+g\Big)k_m\tanh(k_mh_0)\,a_m=-\,(d_m/\rho)\,k_m\tanh(k_mh_0),\qquad\text{(3.10)}
@@ -38,7 +44,7 @@ $$
 d_m=\frac{2}{(bJ_0(k_mb))^2}\int_0^b p_s(r)\,r\,J_0(k_mr)\,dr.\qquad\text{(3.21)}
 $$
 
-The normaliser follows from $\int_0^bJ_0(k_mr)^2r\,dr=\tfrac12b^2J_0(k_mb)^2$ when $J_1(k_mb)=0$ (the preprint prints $J_1$ here).
+The preprint prints $J_1$ in this normaliser; $J_0(k_mb)$ is what the orthogonality relation above gives. The finite radius enters only through the discrete spectrum $J_1(k_mb)=0$ and this norm. Two consequences are used later. The piston mode $k_0=0$ is the only mode that carries volume ($\int_0^bJ_0(k_mr)\,r\,dr=bJ_1(k_mb)/k_m=0$ for $k_m\ne0$), and its forcing coefficient $k_0\tanh(k_0h_0)$ vanishes, so bath volume is conserved exactly. As $b\to\infty$ the zeros of $J_1$ become evenly spaced by $\pi/b$ and the sums tend to Hankel integrals, the deep-bath limit that $b=25R$ approximates; at $b$ of a few $R$ the discrete spectrum is a physical property of the container.
 
 ### 3.2. Droplet interface model
 
@@ -78,7 +84,23 @@ $$
 
 a square system for $\hat c_n$ at fixed $\theta_c$. Contact between the bath and drop ends when the magnitude of the contact force as predicted by the kinematic match becomes negative (here: non-positive for several consecutive steps, or the patch collapsing to its floor).
 
-Lastly we turn to the unknown contact extent $\theta_c(t)$. Following Alventosa et al., we use the predictions from both interfacial models to determine the exact location where the two interfaces cross, and use the largest crossing as the instantaneous edge of contact, holding the previous value when there is none; $\theta_c$ is clamped to $[\arcsin0.01,\arcsin0.9998]$ (the clamps of the reference implementation), and $C$ is the vertical gap between the surfaces, so a root of $C$ is an intersection of the two curves. Tangency, $\partial_\theta C(\theta_c)=0$, is not used: it holds identically at $\theta=0$ by axisymmetry. The alternative $\theta_c=\inf\{\theta:\text{no overlap beyond }\theta,\ \partial_xr<0\}$ is available as `selector=:feasible` but is degenerate once non-overlap stops binding.
+Lastly we turn to the unknown contact extent $\theta_c(t)$. The exact closure is a unilateral (Signorini) contact condition: the pressure is non-negative, the surfaces may not overlap, and pressure acts only where they touch,
+
+$$
+p\ge0,\qquad C\le0,\qquad p\,C=0\qquad(0\le\theta\le\pi).\qquad\text{(3.26a)}
+$$
+
+At frozen geometry $C=C_{\rm free}+\mathcal Ap$ (§3.6), with $C_{\rm free}$ the mismatch produced by the time-stepping history alone and $-\mathcal A$ symmetric positive semidefinite in $\langle u,v\rangle_w=\int uv\,w\,dx$. Then (3.26a) are precisely the optimality conditions of the convex problem
+
+$$
+\min_{p\ge0}\ \tfrac12\langle p,(-\mathcal A)p\rangle_w-\langle p,C_{\rm free}\rangle_w,\qquad\text{(3.26b)}
+$$
+
+so the gap response $\mathcal Ap$ is unique, and the contact set $\{p>0\}$ is part of the solution rather than an input. Tangency, $\partial_\theta C(\theta_c)=0$, is the usual consequence at the edge of the set, but it holds identically at $\theta=0$ by axisymmetry and so cannot select $\theta_c$ at onset.
+
+What we solve is not (3.26b). We restrict the contact set to a single disk, carry the pressure as the polynomial (3.17), and choose its edge as Alventosa et al. do: the predictions of both interfacial models, advanced one step without pressure, are used to find the exact location where the two interfaces cross, and the largest crossing is the instantaneous edge, held at its previous value when there is none, with $\theta_c$ clamped to $[\arcsin0.01,\arcsin0.9998]$. Since $C$ is the vertical gap between the surfaces at radius $r(\theta)$, a root of $C$ is an intersection of the two curves. The rule is a predictor for the support of $p$: pressure pushes the surfaces apart, so the region it must press is bounded by where the unpressed surfaces overlap. This holds for the centre-of-mass and low-order bath contributions to $\mathcal A$ but is not guaranteed pointwise for its oscillatory high-wavenumber part. It is therefore a closure inherited from 1PKM, not a derived free-boundary condition, and it carries no error bound. An alternative, $\theta_c=\inf\{\theta:\text{no overlap beyond }\theta,\ \partial_xr<0\}$, is available as `selector=:feasible`; it is degenerate once non-overlap stops binding and is retained only to reproduce earlier results.
+
+Consistency of the chosen $\theta_c$ with (3.26a) is therefore checked rather than assumed. The tangency residual $\partial_\theta C(\theta_c)$ is reported at every contact step, and $\min p$ on the patch and the overlap beyond the edge can be evaluated from the stored state. At $M=L=60$, $N=3$, negative pressure occurs on 2% of contact steps (90% at $N=12$, past the resolvable budget of §3.6). The contact radius peaks earlier than in the DNS ($\tau\approx0.89$ against $1.46$), so the closure is open to improvement. Solving (3.26b) directly, which would determine the contact set rather than assume it, is the natural next step and has not been done.
 
 ### 3.5. Summary
 
