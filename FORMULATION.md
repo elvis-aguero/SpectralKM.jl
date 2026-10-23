@@ -10,23 +10,33 @@ In this section, we develop a model for droplet impact on a flat fluid interface
 
 The bath interface dynamics are modelled using a linearized, quasi-potential flow model following Galeano-Rios et al. (2017) and Dias et al. (2008). Assuming the flow to be incompressible, isothermal, and Newtonian, we can define the fluid velocity vector $\mathbf u=\nabla\phi+\nabla\times\boldsymbol\Psi$ and the bath interface shape $\eta=\eta(r,t)$. Here, $\phi$ is the scalar potential and $\boldsymbol\Psi$ is the vector stream function. We then linearize the governing equations and boundary conditions about the undisturbed free surface $z=0$, and recast them as
 
-$$\nabla^2\phi+\partial_z^2\phi=0,\quad z\le0;\qquad \partial_t\eta=\partial_z\phi+2\nu\nabla^2\eta,\quad z=0,\tag{3.1–3.2}$$
+$$
+\nabla^2\phi+\partial_z^2\phi=0,\quad z\le0;\qquad \partial_t\eta=\partial_z\phi+2\nu\nabla^2\eta,\quad z=0,\qquad\text{(3.1–3.2)}
+$$
 
-$$\partial_t\phi=-g\eta-2\nu\,\partial_z^2\phi+\sigma\kappa/\rho-p_s/\rho,\quad z=0;\qquad \partial_z\phi=0\ \text{ at }z=-h_0.\tag{3.3–3.4}$$
+$$
+\partial_t\phi=-g\eta-2\nu\,\partial_z^2\phi+\sigma\kappa/\rho-p_s/\rho,\quad z=0;\qquad \partial_z\phi=0\ \mathrm{at}\ z=-h_0.\qquad\text{(3.3–3.4)}
+$$
 
 Here, $p_s(r,t)$ is the contact pressure, $g$ is the gravitational acceleration, $\kappa=\nabla^2\eta$ is twice the linearized mean curvature of the interface, $h_0$ is the depth of the undisturbed bath, and $\rho,\sigma,\nu=\mu/\rho$ are the fluid density, surface tension, and kinematic viscosity, respectively. The tangential stress boundary conditions are automatically satisfied in these approximations. This leading-order theory is valid in the weakly viscous limit when $\mathrm{Re}\gg1$, where $\mathrm{Re}$ is $\mathrm{We}^{1/2}$ over $\mathrm{Oh}$.
 
 We assume that the impact occurs in a bath of some viscous fluid contained in a cylinder of finite radius $b$, subject to two boundary conditions, $\partial_n\phi=0$ on the walls of the bath and $\partial_z\phi=0$ on the bottom of the bath, where $n$ is the outward facing normal of the walls (Benjamin & Ursell 1954). The former condition implies that $\partial_n\eta=0$ on the walls. These conditions correspond physically to a bath where the working fluid maintains a constant contact angle of $90^\circ$ at the walls, and has no-flux boundary conditions along the walls and bottom. For the axisymmetric problem the orthogonal basis functions are $S_{0,m}=J_0(k_mr)$, with $J_0$ the Bessel function of the first kind and $k_m$ the solutions of $J_0'(k_mb)=0$, i.e. $J_1(k_mb)=0$, together with the piston mode $k_0=0$. We then can express the free surface elevation as
 
-$$\eta(r,t)=\sum_{m=0}^{M}a_m(t)J_0(k_mr),\tag{3.6}$$
+$$
+\eta(r,t)=\sum_{m=0}^{M}a_m(t)J_0(k_mr),\qquad\text{(3.6)}
+$$
 
 and re-write all of the unknowns, using (3.1) and (3.2), as functions of the time-varying amplitude coefficients $a_m(t)$. Substituting into the dynamic boundary condition (3.3) and projecting onto the basis, each wave mode in the bath is described by a forced, damped harmonic oscillator equation,
 
-$$\ddot a_m+4\nu k_m^2\dot a_m+\Big(\sigma k_m^2/\rho+g\Big)k_m\tanh(k_mh_0)\,a_m=-\,(d_m/\rho)\,k_m\tanh(k_mh_0),\tag{3.10}$$
+$$
+\ddot a_m+4\nu k_m^2\dot a_m+\Big(\sigma k_m^2/\rho+g\Big)k_m\tanh(k_mh_0)\,a_m=-\,(d_m/\rho)\,k_m\tanh(k_mh_0),\qquad\text{(3.10)}
+$$
 
 where $d_m$ are the Fourier–Bessel coefficients of the pressure, $p_s=\sum_m d_mJ_0(k_mr)$,
 
-$$d_m=\frac{2}{(bJ_0(k_mb))^2}\int_0^b p_s(r)\,r\,J_0(k_mr)\,dr.\tag{3.21}$$
+$$
+d_m=\frac{2}{(bJ_0(k_mb))^2}\int_0^b p_s(r)\,r\,J_0(k_mr)\,dr.\qquad\text{(3.21)}
+$$
 
 The normaliser follows from $\int_0^bJ_0(k_mr)^2r\,dr=\tfrac12b^2J_0(k_mb)^2$ when $J_1(k_mb)=0$ (the preprint prints $J_1$ here).
 
@@ -34,7 +44,9 @@ The normaliser follows from $\int_0^bJ_0(k_mr)^2r\,dr=\tfrac12b^2J_0(k_mb)^2$ wh
 
 Additionally, we wish to recover a similar set of equations that describe the gravity-capillary waves present in the droplet, and then couple these equations to the motion of the bath. The full derivation of the droplet oscillation model can be found throughout prior works (Lamb 1924; Tsamopoulos & Brown 1983; Courty et al. 2006; Chevy et al. 2012; Balla et al. 2019) and is briefly summarized below. We begin by utilizing spherical harmonics to decompose the droplet radius in a spherical domain; due to the axisymmetry of the problem they reduce to Legendre polynomials, $\xi(\theta,t)=R+\sum_l\beta_l(t)P_l(\cos\theta)$. We assume that the velocity potential takes the same form as the decomposition of the interface (Lamb 1924; Balla et al. 2019), and turn to an energy conservation equation of the form $dT/dt=\dot W-\varepsilon$, with $T=K+G$, $\dot W$, and $\varepsilon$ the total energy of the drop, the rate of work done on the droplet interface, and the viscous dissipation, respectively. Utilizing the linearized kinematic boundary condition yields a set of forced, damped harmonic oscillators that describe the amplitude of each individual spherical mode,
 
-$$\ddot\beta_l+2\alpha_l\dot\beta_l+\omega_l^2\beta_l=-\frac{(2l+1)l}{2\rho R}\,\Pi_l+g\,\delta_{1l},\tag{3.14}$$
+$$
+\ddot\beta_l+2\alpha_l\dot\beta_l+\omega_l^2\beta_l=-\frac{(2l+1)l}{2\rho R}\,\Pi_l+g\,\delta_{1l},\qquad\text{(3.14)}
+$$
 
 with $\alpha_l=(2l+1)(l-1)\mu/(\rho R^2)$ and $\omega_l^2=l(l-1)(l+2)\,\sigma/(\rho R^3)$. Here $\Pi_l$ is the projection of the pressure on mode $l$. In Alventosa et al. it is $\int_0^\pi p_s\sin\theta P_l\,d\theta$; we use $\Pi_l=\int_{x_c}^1p_s\,x\,P_l\,w\,dx$ with $x=\cos\theta$ and $w=-\tfrac12\,d(r^2)/dx$ (the area element, $r\,dr=w\,dx$). This differs from theirs at $O(\theta_c^2)$, reduces to it as $\theta_c\to0$, and makes the contact operator of §3.4 self-adjoint. The mode $l=1$ is the translational mode, i.e. the centre of mass, $\beta_1=-z_{cm}$. This model is valid in the weakly viscous limit, when $\mathrm{Oh}\ll1$; as an option (`viscous=:reid`) $\alpha_l,\omega_l$ are replaced by the exact roots of Reid's (1960) characteristic equation, valid at arbitrary $\mathrm{Oh}$.
 
@@ -44,7 +56,9 @@ There is still an additional unknown in the bath mode (3.10) and drop mode (3.14
 
 Unlike Alventosa et al., who assume a profile $p_s=F(t)H_r(r/r_c)/\pi R^2$ with $H_r=C[1-(r/r_c)^6]$, we assume no spatial profile. With $\psi=(x-x_c)/(1-x_c)\in[0,1]$, the pressure is a shifted-Legendre series in $x$,
 
-$$p_s=\frac{2\sigma}{R}\sum_{n=0}^{N}\hat c_n(t)\,\tilde P_n(\psi)\quad(x\ge x_c),\qquad p_s\equiv0\quad(x<x_c),\tag{3.17}$$
+$$
+p_s=\frac{2\sigma}{R}\sum_{n=0}^{N}\hat c_n(t)\,\tilde P_n(\psi)\quad(x\ge x_c),\qquad p_s\equiv0\quad(x<x_c),\qquad\text{(3.17)}
+$$
 
 with $\tilde P_n(\psi)=P_n(2\psi-1)$. Each $\tilde P_n$ is exactly a degree-$n$ polynomial in $x$, the basis is orthogonal on the patch (Gram condition number $2N+1$, against Hilbert-matrix growth for monomials), and the vanishing of the pressure outside the patch is exact and costs no equations. The coefficients $\hat c_n$ are unknowns, determined by the kinematic match below. Substituting (3.17) into (3.10) and (3.14), the pressure enters only through its moments $c_m$ (the dimensionless $d_m$), $b_l$ (the dimensionless $\Pi_l$) and the net force $f$, computed by Gauss–Legendre quadrature. The droplet and centre-of-mass integrands are polynomial in $x$, so the quadrature is exact once the number of nodes $n_q$ exceeds half their degree; the bath integrals contain $J_0(k_mr(x))$ and are quadrature-approximate. The $l=1$ mode reduces to Newton's law for the centre of mass, $\ddot z_{cm}=-F/m+g$ (3.25), with $F$ the integral of the pressure over the contact area.
 
@@ -52,11 +66,15 @@ with $\tilde P_n(\psi)=P_n(2\psi-1)$. Each $\tilde P_n$ is exactly a degree-$n$ 
 
 The contact pressure is determined through a kinematic match condition. Alventosa et al. enforce contact only at a single point, the centre of the axisymmetric domain (the "1-Point" kinematic match, 1PKM), $\eta(0,t)=z_{cm}(t)-\xi(0,t)$, which determines the unknown contact force $F(t)$. We instead enforce contact throughout the contact region, the full kinematic match of Galeano-Rios et al. (2017, 2019, 2021) and Agüero et al. (2026), which circumvents the need for any assumption on the pressure profile shape. Writing $r(\theta)=\xi\sin\theta$, $z_d(\theta)=\xi\cos\theta$ for the droplet surface in the bath frame,
 
-$$C(\theta)\equiv\eta(r(\theta),t)-z_{cm}(t)+z_d(\theta)=0,\qquad0\le\theta\le\theta_c.\tag{3.26}$$
+$$
+C(\theta)\equiv\eta(r(\theta),t)-z_{cm}(t)+z_d(\theta)=0,\qquad0\le\theta\le\theta_c.\qquad\text{(3.26)}
+$$
 
 With $N+1$ coefficients this cannot hold pointwise, so it is imposed in the weighted-residual sense by testing against the pressure basis,
 
-$$\int_{x_c}^{1}C(\theta)\,\tilde P_n(\psi)\,w\,dx=0,\qquad n=0,\dots,N,\tag{3.26'}$$
+$$
+\int_{x_c}^{1}C(\theta)\,\tilde P_n(\psi)\,w\,dx=0,\qquad n=0,\dots,N,\qquad\text{(3.26')}
+$$
 
 a square system for $\hat c_n$ at fixed $\theta_c$. Contact between the bath and drop ends when the magnitude of the contact force as predicted by the kinematic match becomes negative (here: non-positive for several consecutive steps, or the patch collapsing to its floor).
 
@@ -66,19 +84,29 @@ Lastly we turn to the unknown contact extent $\theta_c(t)$. Following Alventosa 
 
 Choosing a timescale of $t_\sigma=\sqrt{\rho R^3/\sigma}$ (with $\tau=t/t_\sigma$), a length scale of $R$, a pressure scale of $2\sigma/R$, and a force scale of $2\pi\sigma R$ (with $f=F/2\pi\sigma R$), we recast the governing equations in non-dimensional form,
 
-$$\eta=\sum_{m=0}^{M}a_m(\tau)J_0(k_mr),\qquad \xi=1+\sum_{l=2}^{L}\beta_l(\tau)P_l(\cos\theta),\tag{3.27–3.28}$$
+$$
+\eta=\sum_{m=0}^{M}a_m(\tau)J_0(k_mr),\qquad \xi=1+\sum_{l=2}^{L}\beta_l(\tau)P_l(\cos\theta),\qquad\text{(3.27–3.28)}
+$$
 
-$$\ddot a_m+2\gamma_m\dot a_m+\omega_m^2a_m=-2\,c_m\,k_m\tanh(k_mh_0),\tag{3.29}$$
+$$
+\ddot a_m+2\gamma_m\dot a_m+\omega_m^2a_m=-2\,c_m\,k_m\tanh(k_mh_0),\qquad\text{(3.29)}
+$$
 
 with $\gamma_m=2\,\mathrm{Oh}\,k_m^2$ and $\omega_m^2=(k_m^2+\mathrm{Bo})\,k_m\tanh(k_mh_0)$,
 
-$$\ddot\beta_l+2\gamma_l\dot\beta_l+\omega_l^2\beta_l=-\,b_l\,(2l+1)\,l,\tag{3.30}$$
+$$
+\ddot\beta_l+2\gamma_l\dot\beta_l+\omega_l^2\beta_l=-\,b_l\,(2l+1)\,l,\qquad\text{(3.30)}
+$$
 
 with $\gamma_l=\mathrm{Oh}\,(2l+1)(l-1)$ and $\omega_l^2=l(l-1)(l+2)$,
 
-$$\ddot z_{cm}=\tfrac32f-\mathrm{Bo},\tag{3.31}$$
+$$
+\ddot z_{cm}=\tfrac32f-\mathrm{Bo},\qquad\text{(3.31)}
+$$
 
-$$\int_{x_c}^{1}\big[\eta(r(\theta),\tau)-z_{cm}(\tau)+z_d(\theta)\big]\tilde P_n(\psi)\,w\,dx=0,\quad n=0,\dots,N,\tag{3.32}$$
+$$
+\int_{x_c}^{1}\big[\eta(r(\theta),\tau)-z_{cm}(\tau)+z_d(\theta)\big]\tilde P_n(\psi)\,w\,dx=0,\quad n=0,\dots,N,\qquad\text{(3.32)}
+$$
 
 with $c_m=\frac{2}{(bJ_0(k_mb))^2}\int p\,J_0(k_mr)\,r\,dr$, $b_l=\int_{x_c}^1p\,x\,P_l\,w\,dx$ and $f=2\int_{x_c}^1p\,w\,dx$, where $p$ is the pressure (3.17) scaled by $2\sigma/R$. Equations (3.29) and (3.30) describe the evolution of the bath and droplet oscillation modes, respectively. Equation (3.31) governs the vertical motion of the droplet's center of mass. Equation (3.32) couples these equations all together and, with the edge rule of §3.4, allows for determination of the unknowns $\hat c_n(\tau)$ and $\theta_c(\tau)$. The shape of the bath and droplet can be reconstructed at any time via the sums in (3.27) and (3.28). The complete model is valid when $\mathrm{Re}\gg1$ (with $\mathrm{Re}$ as above); $\mathrm{Oh}\ll1$ for the Lamb closure only. Also, since the model is linearized about the undeformed state, we anticipate it to hold when deformations remain small, further suggesting $\mathrm{Bo}\ll1$ and $\mathrm{We}\ll1$.
 
@@ -86,7 +114,9 @@ with $c_m=\frac{2}{(bJ_0(k_mb))^2}\int p\,J_0(k_mr)\,r\,dr$, $b_l=\int_{x_c}^1p\
 
 We solve these equations using an implicit method, as the instantaneous size of the pressure distribution acting on both the droplet and bath at the next time step is unknown (Galeano-Rios et al. 2021); treating the pressure explicitly on either the droplet or the bath can lead to nonphysical behavior in the system. We use variable-step second-order backward differentiation (BDF2) rather than backward Euler. Each oscillator $\ddot u+2\gamma\dot u+\omega^2u=Fq$ of (3.29)–(3.31) then makes its state affine in its own pressure moment at the new level,
 
-$$u^{k+1}=\text{history}+\kappa\,q^{k+1},\qquad \kappa=\delta^2F/(\mathfrak a^2+2\gamma\mathfrak a\,\delta+\delta^2\omega^2),\tag{3.33}$$
+$$
+u^{k+1}=\text{history}+\kappa\,q^{k+1},\qquad \kappa=\delta^2F/(\mathfrak a^2+2\gamma\mathfrak a\,\delta+\delta^2\omega^2),\qquad\text{(3.33)}
+$$
 
 with step $\delta$ and BDF2 leading coefficient $\mathfrak a=(1+2s)/(1+s)$ for step ratio $s$. Hence $\eta$, $\xi$ and $z_{cm}$ are explicit affine functions of $\hat c$, and each time step reduces to the algebraic system (3.32). Writing $C=C_{\rm free}+\mathcal Ap$ at frozen geometry, the compliance operator $\mathcal A$ is self-adjoint and negative semidefinite in $\int uv\,w\,dx$, with a small numerical rank (7, 9, 14 at $M=L=20,40,80$). Hence refining $N$ at fixed $M,L$ does not converge the pointwise pressure, whereas the moments that enter (3.29)–(3.31) converge quickly, and $N$ is kept inside this budget (default $N=3$). Because $\theta_c$ is held fixed during each inner solve, the inner system has condition number of order one and flat in $\delta$, against order $10^{18}$ for a joint $(\hat c,\theta_c)$ system. It is solved by Levenberg–Marquardt-damped Newton with a forward-mode automatic-differentiation Jacobian. Defaults are $M=60$, $L=120$, $N=3$, $n_q=200$, with a bath of radius $b=6$ (Alventosa et al.: $M=150$, $L=55$, $b=25R$, no pressure unknowns). Convergence is judged on contact time.
 
