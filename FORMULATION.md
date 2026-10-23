@@ -84,7 +84,7 @@ $$
 
 a square system for $\hat c_n$ at fixed $\theta_c$. Contact between the bath and drop ends when the magnitude of the contact force as predicted by the kinematic match becomes negative (here: non-positive for several consecutive steps, or the patch collapsing to its floor).
 
-Lastly we turn to the unknown contact extent $\theta_c(t)$. The exact closure is a unilateral (Signorini) contact condition: the pressure is non-negative, the surfaces may not overlap, and pressure acts only where they touch,
+Lastly we turn to the unknown contact extent $\theta_c(t)$. If the air film cannot sustain suction, the exact closure is a unilateral (Signorini) contact condition: the pressure is non-negative, the surfaces may not overlap, and pressure acts only where they touch,
 
 $$
 p\ge0,\qquad C\le0,\qquad p\,C=0\qquad(0\le\theta\le\pi).\qquad\text{(3.26a)}
@@ -96,11 +96,11 @@ $$
 \min_{p\ge0}\ \tfrac12\langle p,(-\mathcal A)p\rangle_w-\langle p,C_{\rm free}\rangle_w,\qquad\text{(3.26b)}
 $$
 
-so the gap response $\mathcal Ap$ is unique, and the contact set $\{p>0\}$ is part of the solution rather than an input. Tangency, $\partial_\theta C(\theta_c)=0$, is the usual consequence at the edge of the set, but it holds identically at $\theta=0$ by axisymmetry and so cannot select $\theta_c$ at onset.
+so the gap response $\mathcal Ap$ is unique, and the contact set $\{p>0\}$ is part of the solution rather than an input. The sign condition $p\ge0$ is an assumption about the film, not a result, and neither parent model imposes it pointwise; the closure actually implemented below does not either. Tangency, $\partial_\theta C(\theta_c)=0$, is the usual consequence at the edge of the set, but it holds identically at $\theta=0$ by axisymmetry and so cannot select $\theta_c$ at onset.
 
 What we solve is not (3.26b). We restrict the contact set to a single disk, carry the pressure as the polynomial (3.17), and choose its edge as Alventosa et al. do: the predictions of both interfacial models, advanced one step without pressure, are used to find the exact location where the two interfaces cross, and the largest crossing is the instantaneous edge, held at its previous value when there is none, with $\theta_c$ clamped to $[\arcsin0.01,\arcsin0.9998]$. Since $C$ is the vertical gap between the surfaces at radius $r(\theta)$, a root of $C$ is an intersection of the two curves. The rule is a predictor for the support of $p$: pressure pushes the surfaces apart, so the region it must press is bounded by where the unpressed surfaces overlap. This holds for the centre-of-mass and low-order bath contributions to $\mathcal A$ but is not guaranteed pointwise for its oscillatory high-wavenumber part. It is therefore a closure inherited from 1PKM, not a derived free-boundary condition, and it carries no error bound. An alternative, $\theta_c=\inf\{\theta:\text{no overlap beyond }\theta,\ \partial_xr<0\}$, is available as `selector=:feasible`; it is degenerate once non-overlap stops binding and is retained only to reproduce earlier results.
 
-Consistency of the chosen $\theta_c$ with (3.26a) is therefore checked rather than assumed. The tangency residual $\partial_\theta C(\theta_c)$ is reported at every contact step, and $\min p$ on the patch and the overlap beyond the edge can be evaluated from the stored state. At $M=L=60$, $N=3$, negative pressure occurs on 2% of contact steps (90% at $N=12$, past the resolvable budget of §3.6). The contact radius peaks earlier than in the DNS ($\tau\approx0.89$ against $1.46$), so the closure is open to improvement. Solving (3.26b) directly, which would determine the contact set rather than assume it, is the natural next step and has not been done.
+Consistency of the chosen $\theta_c$ with (3.26a) is therefore checked rather than assumed. The tangency residual $\partial_\theta C(\theta_c)$ is reported at every contact step, and $\min p$ on the patch and the overlap beyond the edge can be evaluated from the stored state. At $M=L=60$, $N=3$, negative pressure occurs on 2% of contact steps (90% at $N=12$, past the resolvable budget of §3.6). The contact radius peaks earlier than in the DNS ($\tau\approx0.89$ against $1.46$), so the closure is open to improvement. Solving (3.26b) directly would determine the contact set rather than assume it, but it would also impose $p\ge0$, which the present model does not; whether to do so is a question about the film's physics, and it has not been done.
 
 ### 3.5. Summary
 
