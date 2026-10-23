@@ -1,6 +1,6 @@
 # A fully spectral kinematic match for droplet–bath impact: model formulation
 
-*Text and notation follow §3 of Alventosa, Cimpeanu & Harris (2023, *J. Fluid Mech.* **958**, A24; arXiv:2209.13276) with minimal edits. Their sentences are kept wherever the model is unchanged. The departures are: (i) the single-point match and the assumed pressure profile are replaced by a spectral pressure solved for over the whole contact region (§3.3–3.4); (ii) the bath radius $b$ is kept as a model parameter of a few droplet radii (Alventosa et al. use the same cylinder with $b=25R$), the finite-radius derivation is written out (§3.1), and the Fourier–Bessel normaliser is corrected; (iii) BDF2 replaces backward Euler, and an optional exact viscous closure replaces Lamb's for the droplet. Derivations and audits: `derivations/`.*
+*Text and notation follow §3 of Alventosa, Cimpeanu & Harris (2023, *J. Fluid Mech.* **958**, A24; arXiv:2209.13276) with minimal edits. Their sentences are kept wherever the model is unchanged. The departures are: (i) the single-point match and the assumed pressure profile are replaced by a spectral pressure solved for over the whole contact region (§3.3–3.4); (ii) the bath radius $b$ is kept as a model parameter of a few droplet radii (Alventosa et al. use the same cylinder with $b=25R$), the finite-radius derivation is written out (§3.1), and the Fourier–Bessel normaliser is corrected; (iii) BDF2 replaces backward Euler. Three closure choices are independent options and are collected as separate tracks in §3.7: the contact edge (A), the droplet viscous closure (B) and the wall condition (C). Derivations and audits: `derivations/`.*
 
 ## 3. Linearized quasi-potential fluid model
 
@@ -20,7 +20,7 @@ $$
 
 Here, $p_s(r,t)$ is the contact pressure, $g$ is the gravitational acceleration, $\kappa=\nabla^2\eta$ is twice the linearized mean curvature of the interface, $h_0$ is the depth of the undisturbed bath, and $\rho,\sigma,\nu=\mu/\rho$ are the fluid density, surface tension, and kinematic viscosity, respectively. The tangential stress boundary conditions are automatically satisfied in these approximations. This leading-order theory is valid in the weakly viscous limit when $\mathrm{Re}\gg1$, where $\mathrm{Re}$ is $\mathrm{We}^{1/2}$ over $\mathrm{Oh}$.
 
-We assume that the impact occurs in a bath of some viscous fluid contained in a cylinder of finite radius $b$, subject to two boundary conditions, $\partial_n\phi=0$ on the walls of the bath and $\partial_z\phi=0$ on the bottom of the bath, where $n$ is the outward facing normal of the walls (Benjamin & Ursell 1954). The former condition implies that $\partial_n\eta=0$ on the walls. These conditions correspond physically to a bath where the working fluid maintains a constant contact angle of $90^\circ$ at the walls, and has no-flux boundary conditions along the walls and bottom. For the axisymmetric problem the orthogonal basis functions are $S_{0,m}=J_0(k_mr)$, with $J_0$ the Bessel function of the first kind and $k_m$ the solutions of $J_0'(k_mb)=0$, i.e. $J_1(k_mb)=0$, together with the piston mode $k_0=0$. We then can express the free surface elevation as
+We assume that the impact occurs in a bath of some viscous fluid contained in a cylinder of finite radius $b$, subject (in the default configuration; other wall conditions are track C) to two boundary conditions, $\partial_n\phi=0$ on the walls of the bath and $\partial_z\phi=0$ on the bottom of the bath, where $n$ is the outward facing normal of the walls (Benjamin & Ursell 1954). The former condition implies that $\partial_n\eta=0$ on the walls. These conditions correspond physically to a bath where the working fluid maintains a constant contact angle of $90^\circ$ at the walls, and has no-flux boundary conditions along the walls and bottom. For the axisymmetric problem the orthogonal basis functions are $S_{0,m}=J_0(k_mr)$, with $J_0$ the Bessel function of the first kind and $k_m$ the solutions of $J_0'(k_mb)=0$, i.e. $J_1(k_mb)=0$, together with the piston mode $k_0=0$. We then can express the free surface elevation as
 
 $$
 \eta(r,t)=\sum_{m=0}^{M}a_m(t)J_0(k_mr),\qquad\text{(3.6)}
@@ -54,7 +54,7 @@ $$
 \ddot\beta_l+2\alpha_l\dot\beta_l+\omega_l^2\beta_l=-\frac{(2l+1)l}{2\rho R}\,\Pi_l+g\,\delta_{1l},\qquad\text{(3.14)}
 $$
 
-with $\alpha_l=(2l+1)(l-1)\mu/(\rho R^2)$ and $\omega_l^2=l(l-1)(l+2)\,\sigma/(\rho R^3)$. Here $\Pi_l$ is the projection of the pressure on mode $l$. In Alventosa et al. it is $\int_0^\pi p_s\sin\theta P_l\,d\theta$; we use $\Pi_l=\int_{x_c}^1p_s\,x\,P_l\,w\,dx$ with $x=\cos\theta$ and $w=-\tfrac12\,d(r^2)/dx$ (the area element, $r\,dr=w\,dx$). This differs from theirs at $O(\theta_c^2)$, reduces to it as $\theta_c\to0$, and makes the contact operator of §3.4 self-adjoint. The mode $l=1$ is the translational mode, i.e. the centre of mass, $\beta_1=-z_{cm}$. This model is valid in the weakly viscous limit, when $\mathrm{Oh}\ll1$; as an option (`viscous=:reid`) $\alpha_l,\omega_l$ are replaced by the exact roots of Reid's (1960) characteristic equation, valid at arbitrary $\mathrm{Oh}$.
+with $\alpha_l=(2l+1)(l-1)\mu/(\rho R^2)$ and $\omega_l^2=l(l-1)(l+2)\,\sigma/(\rho R^3)$. Here $\Pi_l$ is the projection of the pressure on mode $l$. In Alventosa et al. it is $\int_0^\pi p_s\sin\theta P_l\,d\theta$; we use $\Pi_l=\int_{x_c}^1p_s\,x\,P_l\,w\,dx$ with $x=\cos\theta$ and $w=-\tfrac12\,d(r^2)/dx$ (the area element, $r\,dr=w\,dx$). This differs from theirs at $O(\theta_c^2)$, reduces to it as $\theta_c\to0$, and makes the contact operator of §3.6 self-adjoint. The mode $l=1$ is the translational mode, i.e. the centre of mass, $\beta_1=-z_{cm}$. This model is valid in the weakly viscous limit, when $\mathrm{Oh}\ll1$; the closure for $\alpha_l,\omega_l$ is track B (§3.7).
 
 ### 3.3. Pressure forcing during impact
 
@@ -84,23 +84,7 @@ $$
 
 a square system for $\hat c_n$ at fixed $\theta_c$. Contact between the bath and drop ends when the magnitude of the contact force as predicted by the kinematic match becomes negative (here: non-positive for several consecutive steps, or the patch collapsing to its floor).
 
-Lastly we turn to the unknown contact extent $\theta_c(t)$. If the air film cannot sustain suction, the exact closure is a unilateral (Signorini) contact condition: the pressure is non-negative, the surfaces may not overlap, and pressure acts only where they touch,
-
-$$
-p\ge0,\qquad C\le0,\qquad p\,C=0\qquad(0\le\theta\le\pi).\qquad\text{(3.26a)}
-$$
-
-At frozen geometry $C=C_{\rm free}+\mathcal Ap$ (§3.6), with $C_{\rm free}$ the mismatch produced by the time-stepping history alone and $-\mathcal A$ symmetric positive semidefinite in $\langle u,v\rangle_w=\int uv\,w\,dx$. Then (3.26a) are precisely the optimality conditions of the convex problem
-
-$$
-\min_{p\ge0}\ \tfrac12\langle p,(-\mathcal A)p\rangle_w-\langle p,C_{\rm free}\rangle_w,\qquad\text{(3.26b)}
-$$
-
-so the gap response $\mathcal Ap$ is unique, and the contact set $\{p>0\}$ is part of the solution rather than an input. The sign condition $p\ge0$ is an assumption about the film, not a result, and neither parent model imposes it pointwise; the closure actually implemented below does not either. Tangency, $\partial_\theta C(\theta_c)=0$, is the usual consequence at the edge of the set, but it holds identically at $\theta=0$ by axisymmetry and so cannot select $\theta_c$ at onset.
-
-What we solve is not (3.26b). We restrict the contact set to a single disk, carry the pressure as the polynomial (3.17), and choose its edge as Alventosa et al. do: the predictions of both interfacial models, advanced one step without pressure, are used to find the exact location where the two interfaces cross, and the largest crossing is the instantaneous edge, held at its previous value when there is none, with $\theta_c$ clamped to $[\arcsin0.01,\arcsin0.9998]$. Since $C$ is the vertical gap between the surfaces at radius $r(\theta)$, a root of $C$ is an intersection of the two curves. The rule is a predictor for the support of $p$: pressure pushes the surfaces apart, so the region it must press is bounded by where the unpressed surfaces overlap. This holds for the centre-of-mass and low-order bath contributions to $\mathcal A$ but is not guaranteed pointwise for its oscillatory high-wavenumber part. It is therefore a closure inherited from 1PKM, not a derived free-boundary condition, and it carries no error bound. An alternative, $\theta_c=\inf\{\theta:\text{no overlap beyond }\theta,\ \partial_xr<0\}$, is available as `selector=:feasible`; it is degenerate once non-overlap stops binding and is retained only to reproduce earlier results.
-
-Consistency of the chosen $\theta_c$ with (3.26a) is therefore checked rather than assumed. The tangency residual $\partial_\theta C(\theta_c)$ is reported at every contact step, and $\min p$ on the patch and the overlap beyond the edge can be evaluated from the stored state. At $M=L=60$, $N=3$, negative pressure occurs on 2% of contact steps (90% at $N=12$, past the resolvable budget of §3.6). The contact radius peaks earlier than in the DNS ($\tau\approx0.89$ against $1.46$), so the closure is open to improvement. Solving (3.26b) directly would determine the contact set rather than assume it, but it would also impose $p\ge0$, which the present model does not; whether to do so is a question about the film's physics, and it has not been done.
+Lastly we turn to the unknown contact extent $\theta_c(t)$. How it is chosen is a closure in its own right, with more than one admissible rule; these are set out as track A in §3.7. Contact begins at the first step where the surfaces, advanced without pressure, overlap at the pole ($C(0^+)>0$), with $\theta_c$ seeded from the first crossing of $C$, since tangency is degenerate there.
 
 ### 3.5. Summary
 
@@ -142,7 +126,67 @@ $$
 
 with step $\delta$ and BDF2 leading coefficient $\mathfrak a=(1+2s)/(1+s)$ for step ratio $s$. Hence $\eta$, $\xi$ and $z_{cm}$ are explicit affine functions of $\hat c$, and each time step reduces to the algebraic system (3.32). Writing $C=C_{\rm free}+\mathcal Ap$ at frozen geometry, the compliance operator $\mathcal A$ is self-adjoint and negative semidefinite in $\int uv\,w\,dx$, with a small numerical rank (7, 9, 14 at $M=L=20,40,80$). Hence refining $N$ at fixed $M,L$ does not converge the pointwise pressure, whereas the moments that enter (3.29)–(3.31) converge quickly, and $N$ is kept inside this budget (default $N=3$). Because $\theta_c$ is held fixed during each inner solve, the inner system has condition number of order one and flat in $\delta$, against order $10^{18}$ for a joint $(\hat c,\theta_c)$ system. It is solved by Levenberg–Marquardt-damped Newton with a forward-mode automatic-differentiation Jacobian. Defaults are $M=60$, $L=120$, $N=3$, $n_q=200$, with a bath of radius $b=6$ (Alventosa et al.: $M=150$, $L=55$, $b=25R$, no pressure unknowns). Convergence is judged on contact time.
 
-*Wall condition.* The no-flux basis above (`wall=:free`) conserves bath volume exactly, since every mode with $k_m\ne0$ is volume-neutral and the piston mode cannot be driven. A pinned contact line, $\eta(b)=0$, is imposed (`wall=:clamped`) on the same basis by a scalar constraint $\sum_ma_mJ_0(k_mb)=0$ carried by a Lagrange multiplier (the rim's line force), a rank-one correction that preserves self-adjointness and volume conservation. A Dirichlet basis pins $\eta(b)$ but does not conserve volume (`wall=:pinned`, diagnostic only). At $b=6$ the wall condition changes the coefficient of restitution by $-0.001$; for smaller baths it matters.
+### 3.7. Closure tracks
+
+Three parts of the model admit more than one closure. Each is an independent option, selected by its own keyword in `Params`, and any combination can be run. The tracks are not nested: changing one leaves the equations of the others untouched. Defaults are marked.
+
+#### Track A: contact edge $\theta_c$ (`selector`)
+
+The kinematic match (3.26') is solved at a given $\theta_c$; the tracks differ in how $\theta_c$ is chosen. Tangency, $\partial_\theta C(\theta_c)=0$, cannot be used by any of them at onset: it holds identically at $\theta=0$ by axisymmetry.
+
+**A1. Largest crossing (`:crossing`, default).** Following Alventosa et al., the predictions of both interfacial models, advanced one step without pressure, are used to find the exact location where the two interfaces cross, and the largest crossing is the instantaneous edge of contact, held at its previous value when there is none, with $\theta_c$ clamped to $[\arcsin0.01,\arcsin0.9998]$ (the clamps of their reference implementation). Since $C$ is the vertical gap between the surfaces at radius $r(\theta)$, a root of $C$ is an intersection of the two curves. The rule is a predictor for the support of $p$: pressure pushes the surfaces apart, so the region it must press is bounded by where the unpressed surfaces overlap. This holds for the centre-of-mass and low-order bath contributions to $\mathcal A$ but is not guaranteed pointwise for its oscillatory high-wavenumber part. It is a closure inherited from 1PKM, not a derived free-boundary condition, and it carries no error bound.
+
+**A2. Feasible set (`:feasible`, retained for reproduction).** With $\Theta$ the set of $\theta$ for which the surfaces do not overlap beyond $\theta$ and $\partial_xr<0$ at the state the pressure solving (3.26') induces,
+
+$$
+\theta_c=\inf\Theta.\qquad\text{(3.34)}
+$$
+
+Near the edge $C\sim a(\theta-\theta_c)$ and non-overlap is the inequality $a\le0$, so once $a<0$ the infimum is $0$ regardless of the size of $a$: the rule is degenerate, and at high $\mathrm{We}$ it can collapse the patch and lose contact (oil, $\mathrm{We}=7.307$: contact lasts $0.19$ against $5.26$ measured).
+
+**A3. Complementarity (proposed, not implemented).** If the air film cannot sustain suction, the closure is a unilateral (Signorini) contact condition: the pressure is non-negative, the surfaces may not overlap, and pressure acts only where they touch,
+
+$$
+p\ge0,\qquad C\le0,\qquad p\,C=0\qquad(0\le\theta\le\pi).\qquad\text{(3.26a)}
+$$
+
+At frozen geometry $C=C_{\rm free}+\mathcal Ap$ (§3.6), with $C_{\rm free}$ the mismatch produced by the time-stepping history alone and $-\mathcal A$ symmetric positive semidefinite in $\langle u,v\rangle_w=\int uv\,w\,dx$. Then (3.26a) are precisely the optimality conditions of the convex problem
+
+$$
+\min_{p\ge0}\ \tfrac12\langle p,(-\mathcal A)p\rangle_w-\langle p,C_{\rm free}\rangle_w,\qquad\text{(3.26b)}
+$$
+
+so the gap response $\mathcal Ap$ is unique, and the contact set $\{p>0\}$ is part of the solution rather than an input. The sign condition $p\ge0$ is an assumption about the film, not a result, and neither parent model imposes it pointwise; the implemented tracks A1 and A2 do not either. Solving (3.26b) directly would determine the contact set rather than assume it, but it would impose $p\ge0$, which the present model does not; whether to do so is a question about the film's physics. Tangency, $\partial_\theta C(\theta_c)=0$, is the usual consequence at the edge of the set, but it holds identically at $\theta=0$ by axisymmetry and so cannot select $\theta_c$ at onset.
+
+Consistency of the edge chosen by A1 or A2 with (3.26a) is checked rather than assumed. The tangency residual $\partial_\theta C(\theta_c)$ is reported at every contact step, and $\min p$ on the patch and the overlap beyond the edge can be evaluated from the stored state. At $M=L=60$, $N=3$, negative pressure occurs on 2% of contact steps (90% at $N=12$, past the resolvable budget of §3.6). The contact radius peaks earlier than in the DNS ($\tau\approx0.89$ against $1.46$), so the closure is open to improvement.
+
+*Status.* On five anchor points (two water, three oil) A1 and A2 agree to within 0.03% in contact time and 0.08% in penetration depth wherever A2 returns a result; at oil $\mathrm{We}=7.307$ only A1 does. This is not a head-to-head comparison against experiment over all 17 points.
+
+#### Track B: droplet viscous closure (`viscous`)
+
+Only $\alpha_l$ and $\omega_l$ in (3.14) change; the forcing and everything downstream are untouched.
+
+**B1. Lamb (`:lamb`).** The small-viscosity asymptotics given in §3.2, $\alpha_l=(2l+1)(l-1)\mu/(\rho R^2)$, $\omega_l^2=l(l-1)(l+2)\sigma/(\rho R^3)$. This is the closure of Alventosa et al. and is valid for $\mathrm{Oh}\ll1$. Against Reid's exact rates it over-predicts the damping by 4.1% at $l=2$ and 22.9% at $l=120$ at $\mathrm{Oh}=0.006$.
+
+**B2. Reid (`:reid`, default).** $\alpha_l$ and $\omega_l$ are taken from the roots of Reid's (1960) characteristic equation for a viscous drop, valid at arbitrary $\mathrm{Oh}$ (modes with a real root pair are overdamped). At $\mathrm{Oh}=0.006$ the two closures are indistinguishable against experiment; the effect on contact time is 0.24% in oil.
+
+#### Track C: wall condition at $r=b$ (`wall`)
+
+Only the bath eigenvalues, the normaliser (3.21) and a possible constraint change.
+
+**C1. Free, no flux (`:free`, default).** $\partial_r\eta=0$: the $90^\circ$ line of §3.1, $J_1(k_mb)=0$ plus $k_0=0$, normaliser $2/(bJ_0(k_mb))^2$. Bath volume is conserved exactly, because every mode with $k_m\ne0$ is volume-neutral and the piston mode cannot be driven.
+
+**C2. Clamped (`:clamped`).** The C1 basis with a pinned line, $\eta(b)=0$, imposed as the scalar constraint $\sum_ma_mJ_0(k_mb)=0$ carried by a Lagrange multiplier $\Lambda$, physically the rim's line force. Writing the BDF2 state as $a_m=\bar a_m+\kappa_mc_m$ (3.33), the constraint closes on
+
+$$
+a_m=\bar a_m+\kappa_mc_m+(2/b)\,\kappa_m\Lambda/J_0(k_mb),\qquad \Lambda=-\frac{\sum_m(\bar a_m+\kappa_mc_m)J_0(k_mb)}{D},\qquad D=\frac2b\sum_m\kappa_m.\qquad\text{(3.35)}
+$$
+
+$D$ is a sum of same-signed terms and does not vanish. The correction is rank one, preserves the self-adjointness of $\mathcal A$ used in track A3, conserves volume exactly (since $\kappa_0=0$), and is applied at every step including free flight. In a rigid container the wall slope is frozen to $O(\mathrm{Oh})$, so a pinned line with a freely varying slope is over-determined; this is the admissible pinned configuration.
+
+**C3. Dirichlet (`:pinned`, diagnostic only).** $\eta(b)=0$ as an identity of the basis: $k_m$ are the zeros of $J_0$, with no piston mode, and the normaliser is $2/(bJ_1(k_mb))^2$. Every mode now carries volume and nothing constrains the sum: over the reference impact $|\int\eta\,r\,dr|$ reaches 2.79, about four droplet volumes created from nothing. Not a physical closure.
+
+*Status.* At $b=6$, C1 and C2 differ in the coefficient of restitution by $-0.001$. For smaller baths the difference is large and not monotone in $b$, consistent with a container resonance crossing the impact time scale ($k_m\propto1/b$).
 
 *Performance against experiment.* Against the measured bath-rebound data of Alventosa et al., contact time is predicted to 2.7% mean error in oil (1PKM 11.0%, DNS 3.3%), while the coefficient of restitution and penetration depth are under-predicted in oil. Across all 51 point comparisons the model is closer than 1PKM at 16 (`README.md`; `test/test_fluid_sweep_results.jl`).
 
