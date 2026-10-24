@@ -6,16 +6,14 @@
 # output) are consistent and converge. Whether the closure agrees with experiment is a measurement,
 # not a test: see scripts/signorini_study.jl.
 
-using Random
-
 @testset "signorini closure" begin
 
     @testset "nnqp solves min_{p>=0} 1/2 p'Qp - g'p (KKT, against brute-force active-set enumeration)" begin
-        rng = MersenneTwister(7)
         for trial in 1:6
             n = 6
-            B = randn(rng, n + 2, n); Q = B' * B + 1e-3 * I          # symmetric positive definite
-            g = randn(rng, n)
+            B = [sin(1.7i + 2.3j + 0.9trial) + 0.3cos(0.7i * j + trial) for i in 1:n+2, j in 1:n]   # deterministic data
+            Q = B' * B + 1e-3 * I                                                                   # symmetric positive definite
+            g = [cos(1.3i + 2.1trial) for i in 1:n]
             p, _ = nnqp(Q, g; rank_tol=0.0)
             @test all(p .>= 0)
             grad = Q * p .- g
@@ -34,7 +32,7 @@ using Random
         end
         # semidefinite Q (rank 2) with a positive-force constraint, insensitive to the truncation tolerance
         v1 = collect(1.0:8.0); v2 = cos.(1.0:8.0)
-        Qs = v1 * v1' + v2 * v2'; gs = Qs * abs.(randn(rng, 8))
+        Qs = v1 * v1' + v2 * v2'; gs = Qs * abs.(cos.(0.7 .* (1:8)))
         pa, _ = nnqp(Qs, gs; rank_tol=1e-13); pb, _ = nnqp(Qs, gs; rank_tol=1e-9)
         @test norm(Qs * pa - Qs * pb) <= 1e-6 * norm(Qs * pa)          # the gap response is unique
     end
