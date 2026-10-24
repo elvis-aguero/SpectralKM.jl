@@ -8,7 +8,7 @@ In this section, we develop a model for droplet impact on a flat fluid interface
 
 ![Figure 1: schematic of the problem](assets/schematic.svg)
 
-**Figure 1.** (a) Before contact. (b) During contact, when the two interfaces coincide on the pressed surface $S(t)$, whose projection on $z=0$ is $C(t)$, of radius $r_c(t)$. Not to scale.
+**Figure 1.** A drop in contact with the bath (not to scale). On the pressed surface $S(t)$ the two interfaces coincide; its projection on $z=0$ is $C(t)$, of radius $r_c(t)$.
 
 ### 3.1. Bath interface model
 
