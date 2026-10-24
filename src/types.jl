@@ -329,6 +329,17 @@ function Params(; We, Bo, Oh, b, h0, wall::Symbol=:free,
                 """ N L budget
         end
     end
+    # selector=:signorini has only been verified inside a narrow envelope (see src/signorini.jl and README):
+    # outside it the closure can return plausible-looking WRONG numbers with no error, where the other
+    # selectors degrade smoothly. Warn rather than let that pass silently.
+    if check_budget && selector === :signorini && (min(M, L) < 50 || signorini_nodes > 40 || signorini_nodes < 8)
+        @warn """
+            selector=:signorini is outside its verified envelope (M, L >= 50; 8 <= signorini_nodes <= 40; wall=:free;
+            dt_init in [6e-4, 3e-3]). Outside it the closure can return wrong results WITHOUT an error (coarse M, L; n
+            near or above the numerical rank; small dt_init). Cross-check against selector=:crossing at the same
+            settings. Suppress with check_budget=false.
+            """ M L signorini_nodes
+    end
     kvals = (wall === :pinned ? bessel_zeros_J0(M) : bessel_zeros_J1(M)) ./ b
     # Squared-norm weight 2/‖J_0(k_m ·)‖² with ‖·‖² = ∫_0^b J_0(k_m r)² r dr, which equals
     # (b²/2)J_0(k_m b)² when J_1(k_m b) = 0 and (b²/2)J_1(k_m b)² when J_0(k_m b) = 0.

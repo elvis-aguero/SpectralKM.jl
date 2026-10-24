@@ -33,6 +33,14 @@
 # unique where p is not (Q = B' D B with D strictly signed). `theta_c` returned here is therefore the
 # moment-weighted extent, never the edge of the support.
 #
+# OPERATING ENVELOPE (the only region in which results were verified; see the README and
+# scripts/signorini_study.jl, signorini_convergence.jl): wall=:free, M = L >= 50, 8 <= signorini_nodes <= 40
+# (kept below the numerical rank ~ 40), dt_init in [6e-4, 3e-3], and a dt_max run at two values. OUTSIDE IT
+# THE CLOSURE CAN RETURN WRONG NUMBERS WITHOUT AN ERROR (observed: coarse M = L = 30-36; n >= 48 at fine dt_max;
+# dt_init <= 5e-4), whereas :crossing degrades smoothly. A rejection cascade raises an error, but that guard is
+# not exhaustive. Always cross-check against :crossing at the same settings. `Level.X` holds the NODAL
+# pressure followed by the moment-weighted extent, not Legendre coefficients.
+#
 # GEOMETRY. r(theta) and w(x) depend on beta, which depends on p, so the frozen-geometry QP is wrapped
 # in a Picard iteration. It is capped and tolerance-limited because the active set is discontinuous in
 # beta: it contracts geometrically while the active set is fixed, and can stall at an active-set noise

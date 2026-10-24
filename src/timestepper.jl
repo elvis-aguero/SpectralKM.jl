@@ -343,6 +343,10 @@ minimum step size.
 function run_simulation(p::Params; t_end::Float64, dt_init::Float64=1e-3,
     dt_min::Float64=1e-8, dt_max::Float64=0.02, theta_c_floor::Float64=2e-3,
     n_f_negative::Int=3, verbose::Bool=false)
+    if p.selector === :signorini && !(6e-4 <= dt_init <= 3e-3)
+        @warn "selector=:signorini was verified only for dt_init in [6e-4, 3e-3]; the first contact patch can then be \
+               narrower than the first grid element and the onset becomes a point load (wrong results, no error)." dt_init
+    end
     lvl0 = initial_level(p)
     hist = SimHistory(lvl0, lvl0)
     levels = Level[lvl0]
