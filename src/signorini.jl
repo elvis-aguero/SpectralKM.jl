@@ -58,15 +58,23 @@ struct SignoriniGrid
 end
 
 const _SIG_NG = 6                   # Gauss points per hat element
+const _SIG_GRADE = 1.6              # grid grading: theta_j = theta_max (j/n)^_SIG_GRADE
 
-function signorini_grid(thmax::Float64, n::Int, L::Int)
+"""
+    signorini_grid(thmax, n, L; grade) -> SignoriniGrid
+
+Graded grid `theta_j = thmax (j/n)^grade`: the first contact patch is of angular size ~ sqrt(2 v dt) and
+is narrower than a uniform element, so the grid is refined toward the pole. Hat functions are piecewise
+linear in theta on these (unequal) elements.
+"""
+function signorini_grid(thmax::Float64, n::Int, L::Int; grade::Float64=_SIG_GRADE)
     gn, gw = gauss_legendre_nodes(_SIG_NG)
-    h = thmax / n
+    node = [thmax * (j / n)^grade for j in 0:n]
     NQ = n * _SIG_NG
     theta = Vector{Float64}(undef, NQ); wth = similar(theta); phil = similar(theta); elem = Vector{Int}(undef, NQ)
     q = 0
     for e in 1:n
-        a = (e - 1) * h
+        a, h = node[e], node[e+1] - node[e]
         for j in 1:_SIG_NG
             q += 1
             s = (1 + gn[j]) / 2                 # position within the element in [0,1]
@@ -165,9 +173,16 @@ direct solve with a tiny ridge amplifies those into huge alternating-sign pressu
 into wrong forces (observed: f ~ 10 against a physical ~ 0.5 at M=30, L=40, n=96). The truncated
 factorisation is the minimum-norm minimiser on the resolvable subspace, which is all the moments see.
 """
-function nnqp(Q::AbstractMatrix, g::AbstractVector; rank_tol::Float64=1e-12, maxiter::Int=0)
+function nnqp(Q::AbstractMatrix, g::AbstractVector; rank_tol::Float64=1e-12, maxiter::Int=0, _equilibrated::Bool=false)
     n = length(g)
     maxiter = maxiter == 0 ? 6n + 20 : maxiter
+    # Jacobi equilibration: with y_i = sqrt(Q_ii) p_i the diagonal is 1, so a narrow hat is not discarded
+    # merely for being narrow (its raw energy scales with its width). Nonnegativity of p is unchanged.
+    d = _equilibrated ? ones(n) : [Q[i, i] > 0 ? sqrt(Q[i, i]) : 1.0 for i in 1:n]
+    if !_equilibrated && !all(==(1.0), d)
+        y, na = nnqp(Matrix(Q) ./ (d * d'), g ./ d; rank_tol=rank_tol, maxiter=maxiter, _equilibrated=true)
+        return y ./ d, na
+    end
     E = eigen(Symmetric(Matrix(Q)))
     lmax = maximum(E.values)
     keep = findall(>(rank_tol * lmax), E.values)
