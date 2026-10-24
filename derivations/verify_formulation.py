@@ -747,6 +747,107 @@ def compliance():
     return f"N=2, M=L=5, x_c=0.93: relative asymmetry {mp.nstr(asym, 2)}, eigenvalues {[mp.nstr(e, 3) for e in ev]}"
 
 
+# ---- 8. The boundary-value problem and the Fourier-Bessel normaliser --------------------------------------
+@check("Boundary-value problem (3.4a-d), (3.5): the mode solutions satisfy every stated boundary condition, and the "
+       "wall condition holds if and only if J1(k b) = 0", "SYM+BIND", "(3.4a)-(3.4d), (3.5), (3.9)")
+def boundary_value_problem():
+    flat = {k: v.replace(" ", "") for k, v in EQ.items()}
+    for key, needle in (("3.4a", r"\partial_z\phi(r,-h_0,t)=0"), ("3.4b", r"\partial_r\phi(b,z,t)=0"),
+                        ("3.4c", r"\partial_r\phi(0,z,t)=0,\qquad\partial_r\eta(0,t)=0"), ("3.4d", r"\partial_r\eta(b,t)=0")):
+        assert key in flat, f"boundary condition ({key}) is missing from the markdown"
+        assert needle.replace(" ", "") in flat[key], f"({key}) in the text is not {needle}"
+    assert r"r^{-1}\partial_r(r\,\partial_rS)+k^2S=0" in flat["3.5"].replace(" ", "") or \
+        r"r^{-1}\partial_r(r\partial_rS)+k^2S=0" in flat["3.5"], "(3.5) is not the axisymmetric Sturm-Liouville problem"
+    assert r"\partial_rS(b)=0" in flat["3.5"]
+    a = sp.Function("a")(t)
+    J0 = sp.besselj(0, k * r)
+    coef = a.diff(t) + 2 * nu * k**2 * a
+    Z = sp.cosh(k * (z + h)) / (k * sp.sinh(k * h))
+    phi, eta = coef * J0 * Z, a * J0
+    # (3.4a) bottom, (3.4c) axis
+    assert sp.simplify(phi.diff(z).subs(z, -h)) == 0
+    assert sp.simplify(reduce_bessel(phi.diff(r)).subs(r, 0)) == 0 and sp.simplify(reduce_bessel(eta.diff(r)).subs(r, 0)) == 0
+    # (3.4b), (3.4d): d_r J0(kr) = -k J1(kr), so the wall derivatives are PROPORTIONAL to J1(k b) and vanish iff it does
+    dphi_wall = sp.simplify(reduce_bessel(phi.diff(r)).subs(r, b))
+    deta_wall = sp.simplify(reduce_bessel(eta.diff(r)).subs(r, b))
+    J1b = sp.besselj(1, k * b)
+    assert sp.simplify(dphi_wall + k * coef * Z * J1b) == 0 and sp.simplify(deta_wall + k * a * J1b) == 0
+    # compatibility of (3.4b) with (3.4d): d_t d_r eta(b) = d_r d_z phi(b,0) + 2 nu d_r lap(eta)(b), every term ~ J1(k b)
+    lapH = lambda f: f.diff(r, 2) + f.diff(r) / r
+    lhs = reduce_bessel(eta.diff(r).diff(t)).subs(r, b)
+    rhs = reduce_bessel(phi.diff(z).subs(z, 0).diff(r)).subs(r, b) + 2 * nu * reduce_bessel(lapH(eta).diff(r)).subs(r, b)
+    assert sp.simplify(lhs - rhs) == 0
+    assert sp.simplify(reduce_bessel(lapH(eta).diff(r)).subs(r, b) - k**3 * a * J1b) == 0   # exactly 0 on the eigenvalues
+    # (3.5): J0(kr) solves the ODE, is regular at 0; the second solution Y0 is singular there
+    S_ = sp.besselj(0, k * r)
+    assert sp.simplify(reduce_bessel((r * S_.diff(r)).diff(r) / r + k**2 * S_)) == 0
+    assert sp.limit(sp.bessely(0, k * r), r, 0, "+") == -sp.oo
+    # the eigenvalues: d_r J0(k b) = 0  <=>  J1(k b) = 0 ; first roots k b = 3.8317, 7.0156, 10.1735
+    mp.mp.dps = 20
+    roots = [mp.besseljzero(1, m) for m in (1, 2, 3)]
+    assert all(abs(mp.besselj(1, x)) < mp.mpf("1e-15") and abs(mp.diff(lambda y: mp.besselj(0, y), x)) < mp.mpf("1e-15") for x in roots)
+    # negative control: on the DIRICHLET eigenvalues J0(k b) = 0 the wall condition (3.4b) is violated, since J1 there is not 0
+    d1 = mp.besseljzero(0, 1)
+    assert abs(mp.besselj(1, d1)) > 0.5
+    return (f"d_r phi(b), d_r eta(b), d_r lap(eta)(b) all carry the factor J1(k b); roots k b = "
+            f"{', '.join(mp.nstr(x, 5) for x in roots)}; on J0(k b)=0 (k b = {mp.nstr(d1, 5)}) J1 = {mp.nstr(mp.besselj(1, d1), 4)} != 0")
+
+
+@check("Fourier-Bessel normaliser: 2/(b J0(k_m b))^2 is correct; the printed 2/(b J1(k_m))^2 is not (reconstruction test, "
+       "and it is the Dirichlet normaliser)", "SYM+NUM+BIND", "(3.21)")
+def normaliser_dispute():
+    mp.mp.dps = 25
+    bb = mp.mpf(6)
+    # --- symbolic: the squared norm for both eigenproblems, from d/dr[ r^2/2 (J0^2 + J1^2) ] = r J0^2
+    kk = sp.Symbol("kk", positive=True)
+    F = r**2 / 2 * (sp.besselj(0, kk * r) ** 2 + sp.besselj(1, kk * r) ** 2)
+    assert sp.simplify(reduce_bessel(F.diff(r)) - r * sp.besselj(0, kk * r) ** 2) == 0
+    # at r = b:  N = b^2/2 [J0(kb)^2 + J1(kb)^2];  Neumann (J1(kb)=0): b^2 J0(kb)^2/2;  Dirichlet (J0(kb)=0): b^2 J1(kb)^2/2
+    assert tex2expr(EQ["3.21"].split("=", 1)[1].split(r"\int")[0]).xreplace({S("b"): sp.Symbol("bq")}) is not None
+    pref_md = tex2expr(EQ["3.21"].split("=", 1)[1].split(r"\int")[0])
+    assert sp.simplify(pref_md - 2 / (b * sp.besselj(0, S("k_m") * b)) ** 2) == 0, "(3.21) in the text is not 2/(b J0(k_m b))^2"
+    # --- numerical: reconstruct a test function with each normaliser
+    def series(f, ks, norm, rmax, rs):
+        coef = []
+        for kv in ks:
+            integ = mp.quad(lambda x: f(x) * x * mp.besselj(0, kv * x), [0, rmax] if rmax < bb else [0, bb / 2, bb])
+            coef.append(norm(kv) * integ)
+        return [sum(c * mp.besselj(0, kv * x) for c, kv in zip(coef, ks)) for x in rs]
+    def relerr(f, g, rs):
+        num = sum((f(x) - gx) ** 2 * x for x, gx in zip(rs, g)); den = sum(f(x) ** 2 * x for x in rs)
+        return mp.sqrt(num / den)
+    rs = [bb * i / 120 for i in range(1, 121)]
+    M = 40
+    kN = [mp.mpf(0)] + [mp.besseljzero(1, m) / bb for m in range(1, M)]        # Neumann: k_0 = 0, J1(k b) = 0
+    ours = lambda kv: 2 / (bb * mp.besselj(0, kv * bb)) ** 2
+    def printed(kv):                                                            # as printed: J1 AT k_m (no factor b)
+        if kv == 0:                                                              # the piston mode k_0 = 0: J1(0) = 0, so the
+            return ours(kv)                                                      # printed form diverges; give it the right value
+        return 2 / (bb * mp.besselj(1, kv)) ** 2
+    f1 = lambda x: (1 - (x / bb) ** 2) ** 2                                      # smooth, f'(b) = 0
+    rc = mp.mpf(1)
+    f2 = lambda x: (1 - (x / rc) ** 6) if x < rc else mp.mpf(0)                  # Alventosa's top-hat profile H_r, r_c = R
+    e_ours1 = relerr(f1, series(f1, kN, ours, bb, rs), rs)
+    e_print1 = relerr(f1, series(f1, kN, printed, bb, rs), rs)
+    e_ours2 = relerr(f2, series(f2, kN, ours, rc, rs), rs)
+    e_print2 = relerr(f2, series(f2, kN, printed, rc, rs), rs)
+    assert e_ours1 < mp.mpf("1e-3") and e_ours2 < mp.mpf("0.05"), (e_ours1, e_ours2)
+    assert e_print1 > 0.5 and e_print2 > 0.5, (e_print1, e_print2)               # the printed form does not reconstruct
+    assert mp.besselj(1, mp.mpf(0)) == 0                                         # printed form is singular at k_0 = 0 (0 in the denominator)
+    # with the argument k_m b it would be 0: J1(k_m b) = 0 on the Neumann eigenvalues
+    assert all(abs(mp.besselj(1, kv * bb)) < mp.mpf("1e-12") for kv in kN[1:6])
+    # --- the printed form IS the right normaliser for the Dirichlet eigenproblem J0(k b) = 0 (with argument k b):
+    kD = [mp.besseljzero(0, m) / bb for m in range(1, M + 1)]
+    dirich = lambda kv: 2 / (bb * mp.besselj(1, kv * bb)) ** 2
+    g1 = lambda x: (1 - (x / bb) ** 2)                                           # vanishes at r = b
+    e_dir = relerr(g1, series(g1, kD, dirich, bb, rs), rs)
+    e_dir_wrong = relerr(g1, series(g1, kD, ours, bb, rs), rs) if all(abs(mp.besselj(0, kv * bb)) > 1e-8 for kv in kD) else mp.inf
+    assert e_dir < mp.mpf("0.02"), e_dir
+    return (f"M={M}, b=6: relative L2 reconstruction error, smooth f: ours {mp.nstr(e_ours1, 3)} vs printed {mp.nstr(e_print1, 3)}; "
+            f"H_r(r_c=R): ours {mp.nstr(e_ours2, 3)} vs printed {mp.nstr(e_print2, 3)}; Dirichlet basis + J1(k b) normaliser: "
+            f"{mp.nstr(e_dir, 3)}. Source of the printed form: arXiv:2209.13276v2 LaTeX, d_m = 2/(b J_1(k_m))^2 ...")
+
+
 # ----------------------------------------------------------------------------------------------------------
 def main():
     for run in CHECKS:

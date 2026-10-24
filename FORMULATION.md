@@ -6,6 +6,10 @@
 
 In this section, we develop a model for droplet impact on a flat fluid interface from first principles. First, we use the linearized Navier–Stokes equations to model the flow within the bath and the shape of the bath interface. Then, we use an orthogonal function decomposition of the bath model to derive a single set of linear ordinary differential equations (ODEs) that govern the bath mode amplitudes. We then write a similar model for the droplet interface, which reduces to another set of linear ODEs governing droplet mode amplitudes. Finally we represent the pressure distribution and its extent acting on the bath and droplet during contact by a spectral series, couple the two sets of ODEs together using a kinematic match condition enforced over the whole contact region, and solve the system implicitly.
 
+![Figure 1: schematic of the problem](assets/schematic.svg)
+
+**Figure 1.** (a) Before contact. (b) During contact, when the two interfaces coincide on the pressed surface $S(t)$, whose projection on $z=0$ is $C(t)$, of radius $r_c(t)$. Not to scale.
+
 ### 3.1. Bath interface model
 
 The bath interface dynamics are modelled using a linearized, quasi-potential flow model following Galeano-Rios et al. (2017) and Dias et al. (2008). Assuming the flow to be incompressible, isothermal, and Newtonian, we can define the fluid velocity vector $\mathbf u=\nabla\phi+\nabla\times\boldsymbol\Psi$ and the bath interface shape $\eta=\eta(r,t)$. Here, $\phi$ is the scalar potential and $\boldsymbol\Psi$ is the vector stream function. We then linearize the governing equations and boundary conditions about the undisturbed free surface $z=0$, and recast them as
@@ -15,18 +19,44 @@ $$
 $$
 
 $$
-\partial_t\phi=-g\eta-2\nu\,\partial_z^2\phi+\sigma\kappa/\rho-p_s/\rho,\quad z=0;\qquad \partial_z\phi=0\ \mathrm{at}\ z=-h_0.\qquad\text{(3.3–3.4)}
+\partial_t\phi=-g\eta-2\nu\,\partial_z^2\phi+\sigma\kappa/\rho-p_s/\rho,\quad z=0.\qquad\text{(3.3)}
 $$
 
 Here, $p_s(r,t)$ is the contact pressure, $g$ is the gravitational acceleration, $\kappa=\nabla^2\eta$ is twice the linearized mean curvature of the interface, $h_0$ is the depth of the undisturbed bath, and $\rho,\sigma,\nu=\mu/\rho$ are the fluid density, surface tension, and kinematic viscosity, respectively. The tangential stress boundary conditions are automatically satisfied in these approximations. This leading-order theory is valid in the weakly viscous limit when $\mathrm{Re}\gg1$, where $\mathrm{Re}$ is $\mathrm{We}^{1/2}$ over $\mathrm{Oh}$.
 
-We assume that the impact occurs in a bath of some viscous fluid contained in a cylinder of finite radius $b$, subject (in the default configuration; other wall conditions are track C) to two boundary conditions, $\partial_n\phi=0$ on the walls of the bath and $\partial_z\phi=0$ on the bottom of the bath, where $n$ is the outward facing normal of the walls (Benjamin & Ursell 1954). The former condition implies that $\partial_n\eta=0$ on the walls. These conditions correspond physically to a bath where the working fluid maintains a constant contact angle of $90^\circ$ at the walls, and has no-flux boundary conditions along the walls and bottom. For the axisymmetric problem the orthogonal basis functions are $S_{0,m}=J_0(k_mr)$, with $J_0$ the Bessel function of the first kind and $k_m$ the solutions of $J_0'(k_mb)=0$, i.e. $J_1(k_mb)=0$, together with the piston mode $k_0=0$. We then can express the free surface elevation as
+Here $\nabla^2=\partial_r^2+r^{-1}\partial_r$ is the axisymmetric horizontal Laplacian. The bath occupies the cylinder $0\le r\le b$, $-h_0\le z\le0$ after linearization (figure 1), and (3.1)–(3.3) must be closed on the three remaining boundaries, the bottom, the wall and the axis. We assume that the impact occurs in a bath of some viscous fluid contained in a cylinder of finite radius $b$ and depth $h_0$, subject to no flux through the bottom and through the wall (Benjamin & Ursell 1954),
+
+$$
+\partial_z\phi(r,-h_0,t)=0,\qquad\text{(3.4a)}
+$$
+
+$$
+\partial_r\phi(b,z,t)=0,\qquad-h_0\le z\le0,\qquad\text{(3.4b)}
+$$
+
+together with regularity on the axis of symmetry and a constant $90^\circ$ contact angle at the wall,
+
+$$
+\partial_r\phi(0,z,t)=0,\qquad\partial_r\eta(0,t)=0,\qquad\text{(3.4c)}
+$$
+
+$$
+\partial_r\eta(b,t)=0.\qquad\text{(3.4d)}
+$$
+
+Conditions (3.4b) and (3.4d) are compatible: differentiating (3.2) in $r$ at $r=b$ and using (3.4b) at every depth gives $\partial_t\partial_r\eta(b,t)=2\nu\,\partial_r\nabla^2\eta(b,t)$, which is $O(\nu)$, so a wall slope that is initially zero stays zero to leading order. The finite radius is therefore a boundary condition and not merely a truncation: the walls reflect the waves radiated by the impact. For $h_0\to\infty$, (3.4a) is replaced by decay, $\phi\to0$ as $z\to-\infty$, and $\tanh(k_mh_0)\to1$ below; for $b\to\infty$, (3.4b) and (3.4d) are replaced by decay as $r\to\infty$, and the discrete sums below become Hankel integrals. These limits are not used here: $b$ is a model parameter of a few droplet radii. In the axisymmetric case the horizontal structure is the eigenproblem
+
+$$
+r^{-1}\partial_r(r\,\partial_rS)+k^2S=0,\quad0<r<b;\qquad S\ \mathrm{regular\ at}\ r=0,\qquad\partial_rS(b)=0,\qquad\text{(3.5)}
+$$
+
+whose solutions are $S=J_0(kr)$, with $J_0$ the Bessel function of the first kind, and $k=k_m$ the roots of $J_0'(k_mb)=0$, i.e. $J_1(k_mb)=0$, together with the constant solution $k_0=0$ (the piston mode). (The second Bessel solution $Y_0$ is singular at $r=0$ and is excluded by regularity.) For convenience we define $k_{0,m}=k_m$ henceforth. We then can express the free surface elevation as
 
 $$
 \eta(r,t)=\sum_{m=0}^{M}a_m(t)J_0(k_mr),\qquad\text{(3.6)}
 $$
 
-Each $J_0(k_mr)$ satisfies $(\nabla^2+k_m^2)J_0=0$ and, because $J_0'(k_mb)=0$, the wall condition at every depth. Writing $\phi=\sum_m\phi_m(t)J_0(k_mr)Z_m(z)$, Laplace's equation (3.1) gives $Z_m''=k_m^2Z_m$, and the bottom condition (3.4) selects $Z_m=\cosh k_m(z+h_0)/(k_m\sinh k_mh_0)$, normalised so that $Z_m'(0)=1$. The kinematic condition (3.2) then fixes $\phi_m=\dot a_m+2\nu k_m^2a_m$, so
+Each $J_0(k_mr)$ satisfies $(\nabla^2+k_m^2)J_0=0$ and, because $J_0'(k_mb)=0$, the wall condition (3.4b) at every depth. Writing $\phi=\sum_m\phi_m(t)J_0(k_mr)Z_m(z)$, Laplace's equation (3.1) gives $Z_m''=k_m^2Z_m$, and the bottom condition (3.4a) selects $Z_m=\cosh k_m(z+h_0)/(k_m\sinh k_mh_0)$, normalised so that $Z_m'(0)=1$. The kinematic condition (3.2) then fixes $\phi_m=\dot a_m+2\nu k_m^2a_m$, so
 
 $$
 \phi=\sum_{m=0}^{M}\big(\dot a_m+2\nu k_m^2a_m\big)J_0(k_mr)\,Z_m(z),\qquad \kappa=-\sum_{m=0}^{M}k_m^2a_mJ_0(k_mr).\qquad\text{(3.9)}
@@ -84,7 +114,7 @@ $$
 
 a square system for $\hat c_n$ at fixed $\theta_c$. Contact between the bath and drop ends when the magnitude of the contact force as predicted by the kinematic match becomes negative (here: non-positive for several consecutive steps, or the patch collapsing to its floor).
 
-Lastly we turn to the unknown contact extent $\theta_c(t)$. How it is chosen is a closure in its own right, with more than one admissible rule; these are set out as track A in §3.7. Contact begins at the first step where the surfaces, advanced without pressure, overlap at the pole ($C(0^+)>0$), with $\theta_c$ seeded from the first crossing of $C$, since tangency is degenerate there.
+The match (3.26') fixes the pressure once the contact extent $\theta_c(t)$ is known, but it does not by itself fix $\theta_c$. That choice, like the droplet viscous closure of §3.2 and the wall condition of §3.1, admits more than one closure, and stating the closures needs the time-discretised operators of §3.6; they are therefore collected as independent tracks in §3.7. The default for the contact edge is the largest crossing of the two surfaces (track A1). Contact begins at the first step where the surfaces, advanced without pressure, overlap at the pole ($C(0^+)>0$), with $\theta_c$ seeded from the first crossing of $C$, since tangency is degenerate there.
 
 ### 3.5. Summary
 
@@ -114,7 +144,7 @@ $$
 \int_{x_c}^{1}\big[\eta(r(\theta),\tau)-z_{cm}(\tau)+z_d(\theta)\big]\tilde P_n(\psi)\,w\,dx=0,\quad n=0,\dots,N,\qquad\text{(3.32)}
 $$
 
-with $c_m=\frac{2}{(bJ_0(k_mb))^2}\int p\,J_0(k_mr)\,r\,dr$, $b_l=\int_{x_c}^1p\,x\,P_l\,w\,dx$ and $f=2\int_{x_c}^1p\,w\,dx$, where $p$ is the pressure (3.17) scaled by $2\sigma/R$. Equations (3.29) and (3.30) describe the evolution of the bath and droplet oscillation modes, respectively. Equation (3.31) governs the vertical motion of the droplet's center of mass. Equation (3.32) couples these equations all together and, with the edge rule of §3.4, allows for determination of the unknowns $\hat c_n(\tau)$ and $\theta_c(\tau)$. The shape of the bath and droplet can be reconstructed at any time via the sums in (3.27) and (3.28). The complete model is valid when $\mathrm{Re}\gg1$ (with $\mathrm{Re}$ as above); $\mathrm{Oh}\ll1$ for the Lamb closure only. Also, since the model is linearized about the undeformed state, we anticipate it to hold when deformations remain small, further suggesting $\mathrm{Bo}\ll1$ and $\mathrm{We}\ll1$.
+with $c_m=\frac{2}{(bJ_0(k_mb))^2}\int p\,J_0(k_mr)\,r\,dr$, $b_l=\int_{x_c}^1p\,x\,P_l\,w\,dx$ and $f=2\int_{x_c}^1p\,w\,dx$, where $p$ is the pressure (3.17) scaled by $2\sigma/R$. Equations (3.29) and (3.30) describe the evolution of the bath and droplet oscillation modes, respectively. Equation (3.31) governs the vertical motion of the droplet's center of mass. Equation (3.32) couples these equations all together and, with the contact-edge rule of §3.7 (track A), allows for determination of the unknowns $\hat c_n(\tau)$ and $\theta_c(\tau)$. The shape of the bath and droplet can be reconstructed at any time via the sums in (3.27) and (3.28). The complete model is valid when $\mathrm{Re}\gg1$ (with $\mathrm{Re}$ as above); $\mathrm{Oh}\ll1$ for the Lamb closure only. Also, since the model is linearized about the undeformed state, we anticipate it to hold when deformations remain small, further suggesting $\mathrm{Bo}\ll1$ and $\mathrm{We}\ll1$. The system is closed once the three closure choices of §3.7 are made; the defaults are the largest crossing (A1) for the contact edge, Reid's exact rates (B2) for the droplet viscosity and the free no-flux wall (C1).
 
 ### 3.6. Numerical methods
 
