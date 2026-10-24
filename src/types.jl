@@ -301,7 +301,7 @@ the bath eigenvalues and the Fourier-Bessel weight (design doc eq:bessel-norm):
 function Params(; We, Bo, Oh, b, h0, wall::Symbol=:free,
                 M::Integer=DEFAULT_M, L::Integer=DEFAULT_L, N::Integer=DEFAULT_N,
                 nq::Integer=DEFAULT_NQ, selector::Symbol=DEFAULT_SELECTOR,
-                viscous::Symbol=DEFAULT_VISCOUS, check_budget::Bool=true, signorini_nodes::Integer=48)
+                viscous::Symbol=DEFAULT_VISCOUS, check_budget::Bool=true, signorini_nodes::Integer=24)
     selector in (:crossing, :feasible, :signorini) ||
         throw(ArgumentError("selector must be :crossing, :feasible or :signorini, got $selector"))
     wall in (:free, :pinned, :clamped) ||

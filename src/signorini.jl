@@ -219,7 +219,20 @@ function nnqp(Q::AbstractMatrix, g::AbstractVector; rank_tol::Float64=1e-12, max
 end
 
 """Counters of `select_signorini` calls and rejections, for diagnosing step-size cascades."""
-const SIGNORINI_STATS = Dict(:calls => 0, :rej_picard => 0, :rej_w => 0)
+const SIGNORINI_STATS = Dict{Symbol,Any}(:calls => 0, :rej_picard => 0, :rej_w => 0, :consecutive => 0)
+const SIGNORINI_MAX_CONSECUTIVE_REJECTIONS = 40
+
+function _signorini_reject(hist, dt, trace)
+    SIGNORINI_STATS[:consecutive] += 1
+    haskey(SIGNORINI_STATS, :first_reject) || (SIGNORINI_STATS[:first_reject] = (dt=dt, t=hist.curr.t, trace=trace))
+    if SIGNORINI_STATS[:consecutive] > SIGNORINI_MAX_CONSECUTIVE_REJECTIONS
+        SIGNORINI_STATS[:consecutive] = 0
+        error("selector=:signorini cannot find an admissible step at t=$(round(hist.curr.t, digits=5)) " *
+              "even at dt=$(dt): the unilateral problem is stiff at this truncation (M, L) and node count. " *
+              "Increase M and L, or lower signorini_nodes; do not trust a trajectory continued past this point.")
+    end
+    return nothing
+end
 
 """
     select_signorini(hist, dt, p; picard_tol, picard_maxit) -> payload | nothing
@@ -246,6 +259,7 @@ function select_signorini(hist::SimHistory, dt::Float64, p::Params;
     grid = signorini_grid(thmax, n, p.L)
     pn = zeros(n + 1)
     dbeta = Inf; nact = 0; it = 0
+    trace = NamedTuple[]
     cm = zeros(p.M + 1); bl = zeros(p.L + 1); f = 0.0
     for outer in 1:picard_maxit
         it = outer
@@ -256,6 +270,7 @@ function select_signorini(hist::SimHistory, dt::Float64, p::Params;
         f = 2 * dot(e, pn)
         beta_new = gam .+ lambda .* bl
         dbeta = maximum(abs.(beta_new .- beta))
+        push!(trace, (dbeta=dbeta, nact=nact, f=f, nzidx=findall(>(0), pn)))
         beta = beta_new
         (nact == 0 || dbeta < picard_tol) && break
     end
@@ -264,6 +279,7 @@ function select_signorini(hist::SimHistory, dt::Float64, p::Params;
     # discontinuous in beta, so an unconverged Picard iterate is not "nearly" a solution.
     if nact > 0 && dbeta > accept_tol
         SIGNORINI_STATS[:rej_picard] += 1
+        _signorini_reject(hist, dt, trace)
         return nothing
     end
     if nact == 0 || f <= 0
@@ -271,12 +287,14 @@ function select_signorini(hist::SimHistory, dt::Float64, p::Params;
         return (; chat=pn, result=nothing, am, beta=copy(gam), zcm, f=0.0, cm=zeros(p.M + 1), bl=zeros(p.L + 1),
                 theta_c=0.0, picard_its=it, dbeta=dbeta, nactive=0, thmax=thmax, max_overlap=0.0)
     end
+    SIGNORINI_STATS[:consecutive] = 0
     am = alpha .+ kappa .* cm
     zcm = mu + kappa_cm * f
     # moment-weighted extent: theta at which the pressure-weighted mean of r^2 is attained
     xi, r, w = geom_at_nodes(beta, grid.x, grid.P, grid.dP, p.L)
     if !(minimum(w) > 0)
         SIGNORINI_STATS[:rej_w] += 1
+        _signorini_reject(hist, dt, trace)
         return nothing
     end
     # pressure at quadrature points from the nodal hats

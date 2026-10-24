@@ -60,7 +60,7 @@ using Random
         for n in (12, 24, 48)
             grid = signorini_grid(thmax, n, p.L)
             Q, g, H, T, e = signorini_assemble(grid, beta, kappa, alpha, lambda, gam, kappa_cm, mu, p)
-            pn = [pressure_poly(chat, xc, cos(j * thmax / n)) for j in 0:n]
+            pn = [pressure_poly(chat, xc, cos(thmax * (j / n)^SpectralKM._SIG_GRADE)) for j in 0:n]   # the graded grid's own nodes
             f_hat = 2 * dot(e, pn)
             q = contact_quad(xc, p)
             x, wq, P, dP, _ = q
@@ -90,21 +90,21 @@ using Random
         @test_throws ArgumentError select_signorini(SimHistory(lvl, lvl), 1e-3, p)
     end
 
-    @testset "coupled impact: momentum identity, moment convergence in n, agreement with :feasible" begin
+    @testset "coupled impact (M=L=60): momentum identity, convergence in n, agreement with :crossing" begin
         run1(n; sel=:signorini) = begin
-            p = Params(We=1.0958, Bo=0.017, Oh=0.006, b=6.0, h0=3.0, M=30, L=40, N=3, nq=60,
+            p = Params(We=1.0958, Bo=0.017, Oh=0.006, b=6.0, h0=3.0, M=60, L=60, N=3, nq=40,
                        selector=sel, signorini_nodes=n, check_budget=false)
             levels, diag, phases = run_simulation(p; t_end=8.0)
             (p=p, levels=levels, diag=diag, phases=phases, ts=[l.t for l in levels])
         end
-        a = run1(48); b = run1(96)
+        a = run1(24); b = run1(32)
         # discrete momentum identity dv = 3/2 * impulse - Bo * dt, as for the polynomial closures
         ic = findall(==(InContact), a.phases)
         i0, i1 = first(ic) - 1, last(ic) + 1
         rows = [d for d in a.diag if haskey(d, :f)]
         imp = sum(0.5 * (rows[i].f + rows[i-1].f) * (rows[i].t - rows[i-1].t) for i in 2:length(rows))
         dv = a.levels[i1].com.v - a.levels[i0].com.v
-        @test isapprox(dv, 1.5 * imp - a.p.Bo * (a.levels[i1].t - a.levels[i0].t); rtol=0.02, atol=0.01)
+        @test isapprox(dv, 1.5 * imp - a.p.Bo * (a.levels[i1].t - a.levels[i0].t); rtol=0.01, atol=0.005)
         # the pressure is non-negative by construction at every step (the point of the closure)
         @test all(d.nactive >= 1 for d in rows)
         # the observables are converged in n (node count) to well inside the experimental scatter
@@ -113,11 +113,22 @@ using Random
         @test isapprox(tca, tcb; rtol=5e-3)
         @test isapprox(ala, alb; rtol=1e-2)
         @test isapprox(max_penetration_depth(a.levels, a.p.L), max_penetration_depth(b.levels, b.p.L); rtol=5e-3)
-        # and agree with the :feasible rule it most resembles
-        c = run1(2; sel=:feasible)
+        # and agree with the default edge rule on the observables (they differ in the pressure, not here)
+        c = run1(2; sel=:crossing)
         @test isapprox(tca, threshold_contact_time(c.ts, c.levels); rtol=1e-2)
         # the true nonlinear overlap left after the solve is a small fraction of the free overlap
         worst = maximum(d.max_overlap for d in rows)
         @test worst < 1e-2
+    end
+
+    @testset "a rejection cascade raises instead of continuing a garbage trajectory" begin
+        SpectralKM.SIGNORINI_STATS[:consecutive] = 0
+        lvl = initial_level(Params(We=1.0, Bo=0.01, Oh=0.01, b=6.0, h0=3.0, M=4, L=4, N=3, nq=10, check_budget=false))
+        hist = SimHistory(lvl, lvl)
+        for _ in 1:SpectralKM.SIGNORINI_MAX_CONSECUTIVE_REJECTIONS
+            @test SpectralKM._signorini_reject(hist, 1e-3, NamedTuple[]) === nothing
+        end
+        @test_throws ErrorException SpectralKM._signorini_reject(hist, 1e-3, NamedTuple[])
+        SpectralKM.SIGNORINI_STATS[:consecutive] = 0
     end
 end
