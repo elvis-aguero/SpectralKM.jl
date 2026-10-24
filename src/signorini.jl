@@ -215,11 +215,17 @@ plus `info` with the solver audit. Returns the zero-pressure ("contact lost") pa
 `theta_c = 0` when the solve finds `p == 0`.
 """
 function select_signorini(hist::SimHistory, dt::Float64, p::Params;
-                          picard_tol::Float64=1e-7, picard_maxit::Int=12, accept_tol::Float64=1e-5)
+                          picard_tol::Float64=1e-7, picard_maxit::Int=1, accept_tol::Float64=1e-2)
     SIGNORINI_STATS[:calls] += 1
     p.wall === :free || throw(ArgumentError("selector=:signorini supports wall=:free only (the clamped-wall rank-one term is not in Q)"))
     kappa, alpha, lambda, gam, kappa_cm, mu = step_affine(hist, dt, p)
-    beta = copy(gam)                                      # pressure-free geometry
+    # Geometry is frozen at the second-order extrapolation of the two previous time levels (the order of
+    # BDF2), so each step is ONE convex programme. Iterating the geometry to a fixed point (picard_maxit > 1)
+    # is available but is not the default: the active set is discontinuous in beta, and the iteration was
+    # observed to chatter (and, with rejection on non-convergence, to cascade into dt -> 0) at some (M, L, n).
+    dtprev = hist.curr.dt
+    ratio = dtprev > 0 ? dt / dtprev : 0.0
+    beta = hist.curr.drop.beta .+ ratio .* (hist.curr.drop.beta .- hist.prev.drop.beta)
     thmax = signorini_theta_max(beta, p)
     n = p.signorini_nodes
     grid = signorini_grid(thmax, n, p.L)
