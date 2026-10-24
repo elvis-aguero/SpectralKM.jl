@@ -36,14 +36,18 @@ end
 function main()
     M, L, nq = argval("--M", 60), argval("--L", 60), argval("--nq", 40)
     pts = [(split(s, ":")[1], parse(Float64, split(s, ":")[2])) for s in split(argval("--points", "water:0.725074,water:1.938695,oil:1.215765"), ",")]
-    configs = [("crossing", :crossing, 0), ("feasible", :feasible, 0), ("signorini n=24", :signorini, 24),
-               ("signorini n=48", :signorini, 48), ("signorini n=96", :signorini, 96)]
+    configs = [("crossing", :crossing, 0), ("feasible", :feasible, 0), ("signorini n=16", :signorini, 16),
+               ("signorini n=24", :signorini, 24), ("signorini n=32", :signorini, 32)]
     @printf("M=%d L=%d nq=%d, threads=%d\n", M, L, nq, nthreads())
     results = Dict()
     jobs = [(pt, cfg) for pt in pts for cfg in configs]
     @threads for j in eachindex(jobs)
         (which, We), (lbl, sel, n) = jobs[j]
-        results[j] = run_case(which, We, sel; n=max(n, 2), M=M, L=L, nq=nq)
+        results[j] = try
+            run_case(which, We, sel; n=max(n, 2), M=M, L=L, nq=nq)
+        catch err
+            (tc=NaN, al=NaN, dl=NaN, wall=NaN, diag=NamedTuple[], err=sprint(showerror, err))
+        end
     end
     for (ip, (which, We)) in enumerate(pts)
         e = exp_point(which, We)
@@ -51,6 +55,7 @@ function main()
         @printf("  %-16s %8s %7s | %8s %7s | %8s %7s | %6s\n", "closure", "tc", "n_sd", "alpha", "n_sd", "delta", "n_sd", "wall")
         for (ic, (lbl, _, _)) in enumerate(configs)
             r = results[(ip - 1) * length(configs) + ic]
+            haskey(r, :err) && (@printf("  %-16s FAILED: %s\n", lbl, first(r.err, 110)); continue)
             @printf("  %-16s %8.4f %+7.2f | %8.4f %+7.2f | %8.4f %+7.2f | %5.0fs\n", lbl, r.tc, (r.tc - e.tc) / e.tcsd,
                     r.al, (r.al - e.cor) / e.corsd, r.dl, (r.dl - e.dl) / e.dlsd, r.wall)
         end
