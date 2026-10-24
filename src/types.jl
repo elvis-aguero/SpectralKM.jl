@@ -51,6 +51,7 @@ struct Params
     gauss_weights::Vector{Float64}
     com_nodes::Vector{Float64}
     com_weights::Vector{Float64}
+    signorini_nodes::Int
 end
 
 """
@@ -300,9 +301,9 @@ the bath eigenvalues and the Fourier-Bessel weight (design doc eq:bessel-norm):
 function Params(; We, Bo, Oh, b, h0, wall::Symbol=:free,
                 M::Integer=DEFAULT_M, L::Integer=DEFAULT_L, N::Integer=DEFAULT_N,
                 nq::Integer=DEFAULT_NQ, selector::Symbol=DEFAULT_SELECTOR,
-                viscous::Symbol=DEFAULT_VISCOUS, check_budget::Bool=true)
-    selector in (:crossing, :feasible) ||
-        throw(ArgumentError("selector must be :crossing or :feasible, got $selector"))
+                viscous::Symbol=DEFAULT_VISCOUS, check_budget::Bool=true, signorini_nodes::Integer=48)
+    selector in (:crossing, :feasible, :signorini) ||
+        throw(ArgumentError("selector must be :crossing, :feasible or :signorini, got $selector"))
     wall in (:free, :pinned, :clamped) ||
         throw(ArgumentError("wall must be :free, :pinned or :clamped, got $wall"))
     viscous in (:lamb, :reid) ||
@@ -341,7 +342,7 @@ function Params(; We, Bo, Oh, b, h0, wall::Symbol=:free,
     drop_lambda, drop_omega2 = drop_viscous_coeffs(L, Oh, viscous)
     return Params(We, Bo, Oh, M, L, N, b, h0, nq, selector, viscous, drop_lambda, drop_omega2,
                   wall, kvals, bath_norm, j0kb,
-                  nodes, weights, com_nodes, com_weights)
+                  nodes, weights, com_nodes, com_weights, Int(signorini_nodes))
 end
 
 """

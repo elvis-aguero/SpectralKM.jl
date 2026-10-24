@@ -306,7 +306,9 @@ a signal to reduce `dt` and retry.
 """
 function contact_step(hist::SimHistory, dt::Float64, theta_c_prev::Float64,
     chat_guess::Vector{Float64}, p::Params; dt_ref::Float64=1e-3)
-    best = if p.selector === :crossing
+    best = if p.selector === :signorini
+        select_signorini(hist, dt, p)
+    elseif p.selector === :crossing
         select_theta_c_crossing(hist, dt, theta_c_prev, chat_guess, p)
     else
         select_theta_c(hist, dt, theta_c_prev, chat_guess, p; dt_ref=dt_ref)
@@ -321,6 +323,11 @@ function contact_step(hist::SimHistory, dt::Float64, theta_c_prev::Float64,
                   COMState(best.zcm, v), hist.curr.t + dt, dt,
                   vcat(best.chat, best.theta_c))
     T = tangency_residual(best.am, best.beta, best.zcm, best.theta_c, p)
+    if best.result === nothing                        # :signorini carries its own audit instead of a Newton result
+        return level, (; nadmissible=1, theta_c=best.theta_c, T=T, f=best.f, cm=best.cm, bl=best.bl,
+                       status=Converged, resid=best.dbeta, picard_its=best.picard_its, nactive=best.nactive,
+                       max_overlap=best.max_overlap)
+    end
     return level, (; nadmissible=1, theta_c=best.theta_c, T=T, f=best.f, cm=best.cm, bl=best.bl,
                    status=best.result.status, resid=best.result.resid_norm_hist[end])
 end

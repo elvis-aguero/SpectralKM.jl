@@ -17,6 +17,7 @@ include("affine.jl")
 include("residual.jl")
 include("newton.jl")
 include("timestepper.jl")
+include("signorini.jl")
 include("postprocessing.jl")
 
 export Params, Level, SimHistory, Phase, FreeFlight, InContact
@@ -36,6 +37,7 @@ export bath_affine, drop_affine, com_affine, bdf2_coeffs
 export residual, unpack_state, C_at_theta, tangency_residual
 export check_nonintersect, check_monotone_r, check_positivity
 export crossing_theta_c, select_theta_c_crossing
+export select_signorini, signorini_grid, signorini_assemble, signorini_theta_max, nnqp
 export newton_solve, NewtonResult, NewtonStatus, Converged, MaxIterExceeded, Stalled
 export run_simulation, contact_step, inner_solve, onset_theta_c, free_flight_step
 export initial_level, gap_at_pole, select_theta_c, feasible_at, contact_quad
