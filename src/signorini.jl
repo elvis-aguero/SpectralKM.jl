@@ -203,6 +203,9 @@ function nnqp(Q::AbstractMatrix, g::AbstractVector; rank_tol::Float64=1e-12, max
     return pv, count(>(0), pv)
 end
 
+"""Counters of `select_signorini` calls and rejections, for diagnosing step-size cascades."""
+const SIGNORINI_STATS = Dict(:calls => 0, :rej_picard => 0, :rej_w => 0)
+
 """
     select_signorini(hist, dt, p; picard_tol, picard_maxit) -> payload | nothing
 
@@ -213,6 +216,7 @@ plus `info` with the solver audit. Returns the zero-pressure ("contact lost") pa
 """
 function select_signorini(hist::SimHistory, dt::Float64, p::Params;
                           picard_tol::Float64=1e-7, picard_maxit::Int=12, accept_tol::Float64=1e-5)
+    SIGNORINI_STATS[:calls] += 1
     p.wall === :free || throw(ArgumentError("selector=:signorini supports wall=:free only (the clamped-wall rank-one term is not in Q)"))
     kappa, alpha, lambda, gam, kappa_cm, mu = step_affine(hist, dt, p)
     beta = copy(gam)                                      # pressure-free geometry
@@ -237,7 +241,10 @@ function select_signorini(hist::SimHistory, dt::Float64, p::Params;
     # A step whose geometry has not settled, or whose geometry has left the region where the area weight
     # is positive, is REJECTED (the caller halves dt), not accepted with a stale state: the active set is
     # discontinuous in beta, so an unconverged Picard iterate is not "nearly" a solution.
-    nact > 0 && dbeta > accept_tol && return nothing
+    if nact > 0 && dbeta > accept_tol
+        SIGNORINI_STATS[:rej_picard] += 1
+        return nothing
+    end
     if nact == 0 || f <= 0
         am = copy(alpha); zcm = mu
         return (; chat=pn, result=nothing, am, beta=copy(gam), zcm, f=0.0, cm=zeros(p.M + 1), bl=zeros(p.L + 1),
@@ -247,7 +254,10 @@ function select_signorini(hist::SimHistory, dt::Float64, p::Params;
     zcm = mu + kappa_cm * f
     # moment-weighted extent: theta at which the pressure-weighted mean of r^2 is attained
     xi, r, w = geom_at_nodes(beta, grid.x, grid.P, grid.dP, p.L)
-    minimum(w) > 0 || return nothing
+    if !(minimum(w) > 0)
+        SIGNORINI_STATS[:rej_w] += 1
+        return nothing
+    end
     # pressure at quadrature points from the nodal hats
     pq = [grid.phi_left[q] * pn[grid.elem[q]] + (1 - grid.phi_left[q]) * pn[grid.elem[q]+1] for q in eachindex(grid.theta)]
     mw = [grid.wth[q] * w[q] * grid.sinth[q] * pq[q] for q in eachindex(grid.theta)]
