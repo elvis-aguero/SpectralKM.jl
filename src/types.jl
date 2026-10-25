@@ -234,7 +234,7 @@ const DEFAULT_VISCOUS = :reid
 # in Agüero et al. (2026), with no condition on the sign of the force. The defaults are chosen by the
 # experiment comparison recorded in FORMULATION.md §3.7 (scripts/score_vs_experiment.jl).
 const DEFAULT_SOLVER = :newton
-const DEFAULT_CONTACT_END = :force
+const DEFAULT_CONTACT_END = :geometric
 
 """
     Params(; We, Bo, Oh, b, h0, wall=:free, M, L, N, nq,
