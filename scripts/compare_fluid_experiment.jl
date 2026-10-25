@@ -10,15 +10,11 @@
 # of the vertical velocities AT THOSE TIMES; for the model and DNS both move to the centre of mass
 # crossing z = R):
 #
-#   t_c    threshold_contact_time                  -- CoM below z = R
-#   alpha  threshold_coefficient_of_restitution    -- -v_exit/v_enter at those same two crossings,
-#                                                      NOT the phase-based coefficient_of_restitution,
-#                                                      which uses the first/last InContact step and,
-#                                                      with multi-bounce trajectories, the exit of
-#                                                      the LAST bounce rather than the measured one
-#   delta  max_penetration_depth                   -- -min(z_cm - xi(theta=0)); independent of any
-#                                                      contact-time definition and needs no window,
-#                                                      since each rebound is weaker than the last
+#   t_c, alpha  fitted_rebound_metrics(point = :north, nframes = 40): the experiment's own procedure -- top of the
+#               drop crossing z = 2R, parabola over 40 frames of the outgoing flight at 10,000 fps (Alventosa et al.
+#               2023, section 2.2). Reading the centre of mass at z = R instead (their model convention) underestimates
+#               oil alpha by 15-19%, because a 40-frame fit reads the drop's l = 2 oscillation into the exit slope, in
+#               the experiment as in the model (FORMULATION.md section 3.7).
 #
 # THE METRIC OFFSET IS NOT NEGLIGIBLE next to the residuals: experiment times the north pole at
 # z = 2R, this model the CoM at z = R, and the authors quote a typical 5% difference for water and
@@ -103,7 +99,7 @@ function main()
             M, L, N, nq, b, h0, sel, vis, nthreads())
     (M == 60 && L == 120 && nq == 200) ||
         @printf("NOTE: below production truncation (M=60 L=120 nq=200) -- not converged.\n")
-    @printf("metric offset experiment(north pole @2R) vs model(CoM @R): ~%d%% for %s\n\n", off, which)
+    @printf("t_c, alpha read as in the experiment: north pole at 2R, 40-frame parabolic fit at 10,000 fps\n\n")
 
     n = length(e["We"])
     tc = fill(NaN, n); cor = fill(NaN, n); dl = fill(NaN, n); wall = fill(NaN, n)
@@ -113,11 +109,12 @@ function main()
         c = conditions(drop=f, R=R_EXP, V0=V0)
         p = Params(c; b=b, h0=h0, M=M, L=L, N=N, nq=nq, selector=sel, viscous=vis)
         t0 = time()
-        levels, _, _ = run_simulation(p; t_end=tend)
+        levels, _, phases = run_simulation(p; t_end=tend)
         wall[i] = time() - t0
         ts = [l.t for l in levels]
-        v = threshold_contact_time(ts, levels);                  v !== nothing && (tc[i] = v)
-        v = threshold_coefficient_of_restitution(ts, levels);    v !== nothing && (cor[i] = v)
+        # as the experiment reads them: top of the drop at z = 2R, 40-frame parabolic fit at 10,000 fps
+        fit = fitted_rebound_metrics(ts, levels, phases, p.L; frame_dt=1e-4 / t_sigma(f, R_EXP), nframes=40, point=:north)
+        fit !== nothing && (tc[i] = fit.tc; cor[i] = fit.alpha)
         dl[i] = max_penetration_depth(levels, p.L)
         @printf("  [%2d/%2d] We=%.4f done in %.0f s\n", i, n, We, wall[i]); flush(stdout)
     end

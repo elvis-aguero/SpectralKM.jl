@@ -3,8 +3,8 @@
 #
 #   julia --project=. scripts/score_vs_experiment.jl <selector> <solver> <contact_end> <out.csv> [water|oil|both]
 #
-# Writes one row per experimental point. Metrics as in test/test_experiment_regression.jl: threshold contact time,
-# threshold coefficient of restitution, max_penetration_depth; default numerical settings, b = 6, h0 = 3,
+# Writes one row per experimental point. Metrics as the experiment reads them (fitted_rebound_metrics: top of the drop
+# at z = 2R, 40-frame parabolic fit at 10,000 fps) and max_penetration_depth; default numerical settings, b = 6, h0 = 3,
 # t_end = 14. A run that stops (no admissible contact edge while the surfaces overlap) is recorded as FAILED.
 #
 # The comparison metric is fixed BEFORE any run (scripts/score_summary.jl): the pooled standardised mean squared
@@ -33,7 +33,10 @@ open(out, "w") do io
             try
                 levels, _, phases = run_simulation(p; t_end=14.0)
                 ts = [l.t for l in levels]
-                a = threshold_contact_time(ts, levels); b_ = threshold_coefficient_of_restitution(ts, levels)
+                # t_c and alpha as the experiment reads them: top of the drop crossing z = 2R, parabola over 40 frames at
+                # 10,000 fps (Alventosa et al. 2023, section 2.2; FORMULATION.md section 3.7)
+                fit = fitted_rebound_metrics(ts, levels, phases, p.L; frame_dt=1e-4 / t_sigma(f, R), nframes=40, point=:north)
+                a = fit === nothing ? nothing : fit.tc; b_ = fit === nothing ? nothing : fit.alpha
                 m = max_penetration_depth(levels, p.L)
                 tc = a === nothing ? NaN : a; al = b_ === nothing ? NaN : b_; de_ = m === nothing ? NaN : m
                 (isnan(tc) || isnan(al)) && (status = "no_contact_time")

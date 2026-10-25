@@ -24,10 +24,10 @@
 <text x="147.0" y="195" text-anchor="middle" font-style="italic" fill="#111">We</text>
 <text x="18" y="89.0" text-anchor="middle" font-size="13" fill="#111" transform="rotate(-90 18 89.0)">α</text>
 <text x="238" y="26" text-anchor="end" fill="#666">water</text>
-<path d="M 107.1 82.2 L 126.8 87.9 L 145.3 92.0 L 171.6 96.4 L 199.3 99.9" fill="none" stroke="#2a78d6" stroke-width="2"/>
-<path d="M 107.1 77.9 l 4 4 l -4 4 l -4 -4 z" fill="none" stroke="#eb6834" stroke-width="1.5"/>
-<path d="M 126.8 83.7 l 4 4 l -4 4 l -4 -4 z" fill="none" stroke="#eb6834" stroke-width="1.5"/>
-<path d="M 145.3 87.8 l 4 4 l -4 4 l -4 -4 z" fill="none" stroke="#eb6834" stroke-width="1.5"/>
+<path d="M 107.1 85.5 L 126.8 90.3 L 145.3 93.2 L 171.6 96.0 L 199.3 98.4" fill="none" stroke="#2a78d6" stroke-width="2"/>
+<path d="M 107.1 81.1 l 4 4 l -4 4 l -4 -4 z" fill="none" stroke="#eb6834" stroke-width="1.5"/>
+<path d="M 126.8 86.0 l 4 4 l -4 4 l -4 -4 z" fill="none" stroke="#eb6834" stroke-width="1.5"/>
+<path d="M 145.3 88.9 l 4 4 l -4 4 l -4 -4 z" fill="none" stroke="#eb6834" stroke-width="1.5"/>
 <line x1="107.1" y1="86.2" x2="107.1" y2="73.8" stroke="#111" stroke-width="1"/>
 <circle cx="107.1" cy="80.0" r="2.6" fill="#111"/>
 <line x1="126.8" y1="90.8" x2="126.8" y2="82.6" stroke="#111" stroke-width="1"/>
@@ -61,10 +61,10 @@
 <text x="494.0" y="180" text-anchor="middle" fill="#666">2.5</text>
 <text x="399.0" y="195" text-anchor="middle" font-style="italic" fill="#111">We</text>
 <text x="270" y="89.0" text-anchor="middle" font-size="13" fill="#111" transform="rotate(-90 270 89.0)">t<tspan baseline-shift="sub" font-size="8">c</tspan>/t<tspan baseline-shift="sub" font-size="8">σ</tspan></text>
-<path d="M 359.1 51.6 L 378.8 52.7 L 397.3 53.2 L 423.6 53.4 L 451.3 53.4" fill="none" stroke="#2a78d6" stroke-width="2"/>
-<path d="M 359.1 47.6 l 4 4 l -4 4 l -4 -4 z" fill="none" stroke="#eb6834" stroke-width="1.5"/>
-<path d="M 378.8 48.7 l 4 4 l -4 4 l -4 -4 z" fill="none" stroke="#eb6834" stroke-width="1.5"/>
-<path d="M 397.3 49.2 l 4 4 l -4 4 l -4 -4 z" fill="none" stroke="#eb6834" stroke-width="1.5"/>
+<path d="M 359.1 52.2 L 378.8 53.0 L 397.3 53.1 L 423.6 52.8 L 451.3 52.4" fill="none" stroke="#2a78d6" stroke-width="2"/>
+<path d="M 359.1 48.2 l 4 4 l -4 4 l -4 -4 z" fill="none" stroke="#eb6834" stroke-width="1.5"/>
+<path d="M 378.8 49.0 l 4 4 l -4 4 l -4 -4 z" fill="none" stroke="#eb6834" stroke-width="1.5"/>
+<path d="M 397.3 49.1 l 4 4 l -4 4 l -4 -4 z" fill="none" stroke="#eb6834" stroke-width="1.5"/>
 <line x1="359.1" y1="52.1" x2="359.1" y2="42.7" stroke="#111" stroke-width="1"/>
 <circle cx="359.1" cy="47.4" r="2.6" fill="#111"/>
 <line x1="378.8" y1="48.0" x2="378.8" y2="37.8" stroke="#111" stroke-width="1"/>
@@ -136,7 +136,7 @@
 <text x="147.0" y="409" text-anchor="middle" font-style="italic" fill="#111">We</text>
 <text x="18" y="303.0" text-anchor="middle" font-size="13" fill="#111" transform="rotate(-90 18 303.0)">α</text>
 <text x="238" y="240" text-anchor="end" fill="#666">oil</text>
-<path d="M 80.9 311.7 L 90.8 314.2 L 100.2 316.3 L 118.5 319.3 L 134.7 321.2 L 145.7 322.2 L 159.7 323.3 L 174.1 324.1 L 190.4 324.9 L 199.9 325.2 L 223.1 325.9 L 225.5 326.0" fill="none" stroke="#2a78d6" stroke-width="2"/>
+<path d="M 80.9 298.8 L 90.8 301.5 L 100.2 303.8 L 118.5 307.5 L 134.7 310.1 L 145.7 311.5 L 159.7 312.9 L 174.1 314.2 L 190.4 315.4 L 199.9 315.9 L 223.1 316.9 L 225.5 317.0" fill="none" stroke="#2a78d6" stroke-width="2"/>
 <line x1="80.9" y1="293.7" x2="80.9" y2="284.9" stroke="#111" stroke-width="1"/>
 <circle cx="80.9" cy="289.3" r="2.6" fill="#111"/>
 <line x1="90.8" y1="302.1" x2="90.8" y2="288.1" stroke="#111" stroke-width="1"/>
@@ -182,7 +182,7 @@
 <text x="494.0" y="394" text-anchor="middle" fill="#666">8</text>
 <text x="399.0" y="409" text-anchor="middle" font-style="italic" fill="#111">We</text>
 <text x="270" y="303.0" text-anchor="middle" font-size="13" fill="#111" transform="rotate(-90 270 303.0)">t<tspan baseline-shift="sub" font-size="8">c</tspan>/t<tspan baseline-shift="sub" font-size="8">σ</tspan></text>
-<path d="M 332.9 269.1 L 342.8 270.1 L 352.2 270.4 L 370.5 270.6 L 386.7 270.6 L 397.7 270.5 L 411.7 270.4 L 426.1 270.3 L 442.4 270.2 L 451.9 270.2 L 475.1 270.1 L 477.5 270.1" fill="none" stroke="#2a78d6" stroke-width="2"/>
+<path d="M 332.9 266.4 L 342.8 267.3 L 352.2 267.8 L 370.5 268.0 L 386.7 268.1 L 397.7 268.0 L 411.7 268.0 L 426.1 268.0 L 442.4 268.0 L 451.9 268.0 L 475.1 268.1 L 477.5 268.1" fill="none" stroke="#2a78d6" stroke-width="2"/>
 <line x1="332.9" y1="282.9" x2="332.9" y2="273.4" stroke="#111" stroke-width="1"/>
 <circle cx="332.9" cy="278.1" r="2.6" fill="#111"/>
 <line x1="342.8" y1="283.8" x2="342.8" y2="261.5" stroke="#111" stroke-width="1"/>

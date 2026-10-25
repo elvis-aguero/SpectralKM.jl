@@ -112,7 +112,9 @@ else
             levels, _, phases = run
             ts = [l.t for l in levels]
 
-            tct = threshold_contact_time(ts, levels)
+            # contact time as the experiment reads it: top of the drop at z = 2R, 40-frame parabolic fit at 10,000 fps
+            fit = fitted_rebound_metrics(ts, levels, phases, p.L; frame_dt=1e-4 / t_sigma(f, R), nframes=40, point=:north)
+            tct = fit === nothing ? nothing : fit.tc
 
             # MAXIMUM DEFLECTION IS INDEPENDENT OF ANY CONTACT-TIME DEFINITION. It is just
             # -min(z_cm - xi(theta=0)) over the trajectory, so it needs NO contact window at all,
