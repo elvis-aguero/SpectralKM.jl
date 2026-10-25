@@ -34,6 +34,7 @@ export gauss_legendre_nodes
 export pressure_poly, b_l_all, com_force_closed
 export forward_map_r, forward_map_zd, xi_of_theta, w_of_x, r_of_x, zd_of_x, xi_of_x
 export c_m_all
+export fitted_rebound_metrics, north_pole_height
 export bath_affine, drop_affine, com_affine, bdf2_coeffs
 export residual, unpack_state, C_at_theta, tangency_residual
 export check_nonintersect, check_monotone_r, check_positivity

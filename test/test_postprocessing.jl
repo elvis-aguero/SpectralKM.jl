@@ -133,3 +133,21 @@ end
         @test_throws ArgumentError threshold_contact_time(ts, lv)
     end
 end
+
+@testset "fitted_rebound_metrics: exact on a ballistic rebound (Alventosa et al.'s procedure)" begin
+    # contact on [0, te], then ballistic: z = ze + ve (t - te) - Bo (t - te)^2 / 2, spherical drop (north = z + 1).
+    Bo, ze, ve, te = 0.02, 0.8, 0.35, 3.0
+    ts = collect(0.0:0.01:12.0)
+    z(t) = t <= te ? 1 - (1 - ze) * sin(pi * t / (2te)) : ze + ve * (t - te) - Bo * (t - te)^2 / 2   # continuous at te
+    v(t) = t <= te ? -(1 - ze) * pi / (2te) * cos(pi * t / (2te)) : ve - Bo * (t - te)
+    lv = [Level(BathModeState(2), DropModeState(4), COMState(z(t), t == 0 ? -1.0 : v(t)), t, 0.01, nothing) for t in ts]
+    ph = [t <= te ? InContact : FreeFlight for t in ts]
+    ph[1] = FreeFlight
+    Ve = sqrt(ve^2 + 2Bo * (ze - 1)); tstar = te + (ve - Ve) / Bo          # exact rising crossing of z = 1
+    for point in (:com, :north)
+        r = fitted_rebound_metrics(ts, lv, ph, 4; frame_dt=0.13, point=point)
+        @test r !== nothing
+        @test isapprox(r.tc, tstar; atol=1e-9)
+        @test isapprox(r.alpha, Ve / 1.0; atol=1e-9)
+    end
+end

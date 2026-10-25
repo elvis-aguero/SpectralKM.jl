@@ -252,3 +252,64 @@ function reconstruct_drop(lvl::Level, theta_grid::AbstractVector{Float64}, L::In
     z = [lvl.com.z - forward_map_zd(lvl.drop.beta, th, L) for th in theta_grid]
     return r, z
 end
+
+north_pole_height(lvl::Level, L::Integer) = lvl.com.z + xi_of_theta(lvl.drop.beta, π, L)
+
+"""
+    fitted_rebound_metrics(times, levels, phases, L; frame_dt, nframes=40, point=:north) -> (tc, alpha) | nothing
+
+Contact time and coefficient of restitution by the EXPERIMENTAL procedure of Alventosa et al. (2023, §2.2), applied to
+the simulated trajectory: the tracked point (`:north`, the top of the drop, crossing `z = 2R`; or `:com`, the centre of
+mass, crossing `z = R`) is sampled at the camera's frame interval `frame_dt` (in units of t_sigma; 10,000 fps in their
+experiments), a parabola is least-squares fitted to the first `nframes` frames of the outgoing free flight (they used at
+least 40), and `t_c` is the time of the fit's rising root at the threshold, `alpha` the fit's slope there divided by the
+impact speed.
+
+The incoming side needs no fit here: the simulation starts with an undeformed drop whose top is exactly at `2R` (centre
+of mass at `R`) moving at `-sqrt(We)`, so the incoming crossing is `t = 0` with speed `-levels[1].com.v`; their
+incoming fit is of a drop whose oscillations have decayed, i.e. the same thing.
+
+The outgoing window starts at the first frame after both the end of contact and the tracked point's rising crossing of
+the threshold, since the experiment fits only frames after the drop has rebounded; "the end of contact" is that of the
+last contact interval before a free flight long enough for the window (a brief lift-off and re-touch belongs to the
+impact). Returns `nothing` if there is no such flight.
+"""
+function fitted_rebound_metrics(times::Vector{Float64}, levels::Vector{Level}, phases::Vector{Phase}, L::Integer;
+                                frame_dt::Float64, nframes::Int=40, point::Symbol=:north)
+    point in (:north, :com) || throw(ArgumentError("point must be :north or :com"))
+    h(l) = point === :north ? north_pole_height(l, L) : l.com.z
+    thr = point === :north ? 2.0 : 1.0
+    ivs = contact_intervals(times, phases)
+    isempty(ivs) && return nothing
+    hs = [h(l) for l in levels]
+    interp(t) = (j = searchsortedfirst(times, t); j <= 1 ? hs[1] : j > length(times) ? hs[end] :
+                 hs[j-1] + (hs[j] - hs[j-1]) * (t - times[j-1]) / (times[j] - times[j-1]))
+    # The rebound flight is the first free flight long enough to hold the fitting window: a brief lift-off and
+    # re-touch right after the main contact (Agüero et al. 2026 report one) is part of the impact, and the camera,
+    # which tracks the top of the drop, cannot see it.
+    tf = nothing
+    for (n, iv) in enumerate(ivs)
+        t_stop = n < length(ivs) ? ivs[n+1].t_start : times[end]
+        k = searchsortedfirst(times, iv.t_end)
+        while k <= length(times) && times[k] <= t_stop && hs[k] < thr
+            k += 1
+        end
+        (k > length(times) || times[k] > t_stop) && continue
+        cand = [times[k] + j * frame_dt for j in 0:nframes-1]
+        cand[end] <= t_stop && (tf = cand; break)
+    end
+    tf === nothing && return nothing
+    t0 = tf[1]
+    A = [ones(nframes) tf tf .^ 2]
+    c = A \ [interp(t) for t in tf]
+    # rising root of c1 + c2 t + c3 t^2 = thr
+    a2, a1, a0 = c[3], c[2], c[1] - thr
+    disc = a1^2 - 4a2 * a0
+    disc < 0 && return nothing
+    roots = ((-a1 - sqrt(disc)) / (2a2), (-a1 + sqrt(disc)) / (2a2))
+    slope(t) = a1 + 2a2 * t
+    cand = [t for t in roots if slope(t) > 0]
+    isempty(cand) && return nothing
+    tr = cand[argmin([abs(t - t0) for t in cand])]
+    return (tc=tr, alpha=slope(tr) / (-levels[1].com.v))
+end
