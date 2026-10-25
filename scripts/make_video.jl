@@ -6,7 +6,7 @@
 # the only requirement.
 #
 # Usage:
-#   julia --project=. scripts/make_video.jl [We] [outfile.mp4] [M] [L] [N] [nq]
+#   julia --project=. scripts/make_video.jl [water|oil] [We] [outfile.mp4]      (package defaults otherwise)
 #
 # What is drawn, per frame:
 #   * the bath free surface eta(r) = sum_m a_m J0(k_m r), mirrored about the axis;
@@ -241,16 +241,15 @@ function frame(lvl, p::Params, f, rc_max, pmin, pmax)
 end
 
 function main()
-    We = length(ARGS) >= 1 ? parse(Float64, ARGS[1]) : 1.0958
-    M = length(ARGS) >= 3 ? parse(Int, ARGS[3]) : 120
-    L = length(ARGS) >= 4 ? parse(Int, ARGS[4]) : 120
-    N = length(ARGS) >= 5 ? parse(Int, ARGS[5]) : 6
-    nq = length(ARGS) >= 6 ? parse(Int, ARGS[6]) : 60
+    fl = length(ARGS) >= 1 ? Symbol(ARGS[1]) : :water            # :water or :oil, the experiments' liquids
+    We = length(ARGS) >= 2 ? parse(Float64, ARGS[2]) : 0.983572  # default: the water experiment closest to We = 1
     mediadir = joinpath(@__DIR__, "..", "output", "media")
     mkpath(mediadir)
-    out = length(ARGS) >= 2 ? ARGS[2] : joinpath(mediadir, "impact_We$(We).mp4")
-    p = Params(We=We, Bo=0.017, Oh=0.006, M=M, L=L, N=N, b=6.0, h0=3.0, nq=nq)
-    println("running We=$We at M=$M L=$L N=$N nq=$nq ...")
+    out = length(ARGS) >= 3 ? ARGS[3] : joinpath(mediadir, "impact_$(fl)_We$(We).mp4")
+    f = fluid(fl); R = 3.5e-4
+    # the package's default path: defaults for truncation, solver, edge rule and end of contact
+    p = Params(conditions(drop=f, R=R, V0=sqrt(We * f.sigma / (f.rho * R))); b=6.0, h0=3.0)
+    println("running $(fl) We=$We (Bo=$(round(p.Bo, sigdigits=3)), Oh=$(round(p.Oh, sigdigits=3))) at defaults M=$(p.M) L=$(p.L) N=$(p.N) ...")
     levels, diag = run_simulation(p; t_end=8.0, dt_init=1e-3)
     fmap = Dict(round(d.t, digits=12) => d.f for d in diag)
     println("  $(length(levels)) levels, $(length(diag)) contact steps")
