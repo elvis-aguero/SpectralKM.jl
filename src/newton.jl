@@ -175,10 +175,10 @@ determined by the equations, and the minimum-norm iterate sets them to zero inst
 whatever the starting guess or round-off put there. Because the inner map is affine up to the
 mild geometry coupling, the iterate is independent of `X0` and converges in a few steps.
 
-The truncation level is the smallest on `rtol_ladder` at which the iteration converges without
-increasing the residual. A level that keeps nearly-null directions asks for coefficients of order
-1e6 (measured at theta_c = 0.046), the area weight w(x) changes sign under the resulting geometry
-and the iteration fails; the next level up is then taken. Above theta_c ~ 0.1 every level gives the
+The truncation level: the most truncated level on `rtol_ladder` that satisfies every equation, else
+the most truncated level that converged on its retained subspace. A level that keeps nearly-null
+directions asks for coefficients of order 1e6 (measured at theta_c = 0.046) or worse and is never
+preferred over one that already solves the system. Above theta_c ~ 0.1 every level gives the
 same answer (residual 1e-14 relative, identical f); below it the answer depends on the level,
 which is the identifiability limit of the truncated modes, not a solver defect.
 
@@ -188,13 +188,25 @@ a step below `1e-9` relative. `resid_norm_hist` records the full residual, which
 the discarded directions; that component cannot be removed by any bounded pressure.
 """
 function minnorm_gauss_newton(R, X0::AbstractVector{Float64};
-                              rtol_ladder=(1e-10, 1e-8, 1e-6, 1e-4, 1e-3), kwargs...)
+                              rtol_ladder=(1e-3, 1e-4, 1e-6, 1e-8, 1e-10), full_tol::Float64=1e-10, kwargs...)
+    # Most truncated level first. A level that satisfies EVERY equation (full residual <= full_tol * scale) ends the
+    # search: keeping more directions cannot improve it and only admits nearly-null ones. If no level satisfies all of
+    # them (a patch below what the modes resolve), the most truncated level that converged on its own subspace is
+    # returned. Going the other way -- least truncated first -- accepted, at We = 0.0231, theta_c = 0.049, a
+    # "converged" iterate with net force 7.8e30.
+    # The minimum-norm iterate does not depend on the start except through the mild geometry coupling, so a start
+    # that the geometry cannot evaluate (w changes sign, R non-finite) is replaced by zero.
+    all(isfinite, R(X0)) || (X0 = zero(X0))
+    s = max(norm(R(zero(X0))), norm(R(X0)))
+    first_ok = nothing
     local res
     for rt in rtol_ladder
         res = _minnorm_gn(R, X0; rtol_svd=rt, kwargs...)
-        res.status == Converged && res.resid_norm_hist[end] <= res.resid_norm_hist[1] && return res
+        res.status == Converged || continue
+        first_ok === nothing && (first_ok = res)
+        res.resid_norm_hist[end] <= full_tol * s && return res
     end
-    return res
+    return first_ok === nothing ? res : first_ok
 end
 
 function _minnorm_gn(R, X0::AbstractVector{Float64}; rtol_svd::Float64=1e-10,

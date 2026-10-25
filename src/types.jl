@@ -233,7 +233,7 @@ const DEFAULT_VISCOUS = :reid
 # one step with NO pressure, no longer overlap anywhere -- the zero-patch candidate becomes admissible, as
 # in Agüero et al. (2026), with no condition on the sign of the force. The defaults are chosen by the
 # experiment comparison recorded in FORMULATION.md §3.7 (scripts/score_vs_experiment.jl).
-const DEFAULT_SOLVER = :newton
+const DEFAULT_SOLVER = :minnorm
 const DEFAULT_CONTACT_END = :geometric
 
 """
@@ -322,6 +322,13 @@ function Params(; We, Bo, Oh, b, h0, wall::Symbol=:free,
         throw(ArgumentError("solver must be :newton or :minnorm, got $solver"))
     contact_end in (:force, :geometric) ||
         throw(ArgumentError("contact_end must be :force or :geometric, got $contact_end"))
+    # DEPRECATED options, kept only to reproduce earlier numbers. Against the 17 bath experiments the configurations
+    # are indistinguishable in error (FORMULATION.md §3.7); solver = :newton accepts unconverged iterates on small
+    # patches and is 2x slower, and contact_end = :force fails on 12 of 17 points once the equations are solved.
+    solver === :newton && @warn "solver = :newton is deprecated: it can return its starting guess or an unconverged \
+        iterate on small contact patches (FORMULATION.md §3.6). Use the default solver = :minnorm." maxlog = 1
+    contact_end === :force && @warn "contact_end = :force is deprecated: with the corrected solver it fails on 12 of the \
+        17 bath experiments. Use the default contact_end = :geometric." maxlog = 1
     wall in (:free, :pinned, :clamped) ||
         throw(ArgumentError("wall must be :free, :pinned or :clamped, got $wall"))
     viscous in (:lamb, :reid) ||

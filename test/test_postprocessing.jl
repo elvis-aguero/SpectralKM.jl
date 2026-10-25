@@ -68,7 +68,9 @@ end
     # `phases` must be one label per accepted level. `diag` deliberately is NOT: it carries a
     # row per contact step only, so it is shorter and indexes differently. Conflating the two
     # is what made contact_time unreachable from a real run at one point.
-    p = Params(We=1.0958, Bo=0.017, Oh=0.006, M=8, L=8, N=1, b=6.0, h0=3.0, nq=12)
+    # A resolved truncation: at M = L = 8 the inner equations, once actually solved (solver = :minnorm), drive the
+    # drop into the bath and run_simulation stops; the old solver hid that by not converging.
+    p = Params(We=1.0958, Bo=0.017, Oh=0.006, M=60, L=120, N=3, b=6.0, h0=3.0, nq=80)
     levels, diag, phases = run_simulation(p; t_end=0.6, dt_init=1e-3)
     @test length(phases) == length(levels)
     @test length(diag) <= length(levels)

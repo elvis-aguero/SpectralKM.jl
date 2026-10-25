@@ -178,7 +178,10 @@
         for (We, Bo, Oh) in ((0.5, 0.02, 0.01), (1.0958, 0.017, 0.006), (3.0, 0.05, 0.03))
             p = Params(We=We, Bo=Bo, Oh=Oh, b=6.0, h0=3.0, M=30, L=40, N=3, nq=100)
             levels, diag, phases = run_simulation(p; t_end=8.0)
-            c = coefficient_of_restitution([l.t for l in levels], levels, phases)
+            # The bounce the experiment measures (Alventosa et al.'s definition). The phase-based
+            # coefficient_of_restitution spans every contact interval, and with contact_end = :geometric a brief
+            # lift-off and re-touch (as Agüero et al. 2026 also report) makes its "last contact step" a later one.
+            c = threshold_coefficient_of_restitution([l.t for l in levels], levels)
             c === nothing && continue
             @test 0 < c <= 1
         end
@@ -195,30 +198,34 @@
         rows = [d for d in diag if haskey(d, :theta_c)]
         @test !isempty(rows)
         # trapezoid over the reported per-step force, against dv from the trajectory
+        # the FIRST contact interval only: with contact_end = :geometric a brief lift-off and re-touch can follow,
+        # and a trapezoid across that free-flight gap would integrate a force that is not there
         ic = findall(==(InContact), phases)
         @test !isempty(ic)
+        ts_all = [l.t for l in levels]
+        iv1 = first(contact_intervals(ts_all, phases))
+        ic = filter(i -> iv1.t_start <= levels[i].t <= iv1.t_end + 1e-12, ic)
+        rows = [d for d in rows if iv1.t_start <= d.t <= iv1.t_end + 1e-12]
         i0, i1 = first(ic) - 1, last(ic) + 1
+        # THE IDENTITY IS FIXED BY eq:com OF THE PAPER: zdot_cm = v, vdot = (3/2) f - Bo. It is checked in the scheme's
+        # OWN discretisation, step by step: (a v^{k+1} + b v^k + c v^{k-1}) / dt = (3/2) f^{k+1} - Bo with the variable-step
+        # BDF2 coefficients, which must hold to round-off at every contact step. (An earlier version integrated f with
+        # the trapezoid rule over the whole contact and allowed 1%; once the inner equations are actually solved the
+        # force alternates in sign on the first, under-resolved steps and the trapezoid rule alone is off by ~5%, a
+        # quadrature error rather than a momentum leak.)
+        fof = Dict(d.t => d.f for d in rows)
+        worst = 0.0
+        for i in ic
+            i >= 3 || continue
+            a, b, c = bdf2_coeffs(levels[i].dt, levels[i-1].dt)
+            lhs = (a * levels[i].com.v + b * levels[i-1].com.v + c * levels[i-2].com.v) / levels[i].dt
+            worst = max(worst, abs(lhs - (1.5 * fof[levels[i].t] - p.Bo)))
+        end
+        @test worst < 1e-8
+        # and the net effect of contact is upward: the drop leaves faster upward than gravity alone would allow
         if i0 >= 1 && i1 <= length(levels)
             dv = levels[i1].com.v - levels[i0].com.v
-            ts = [d.t for d in rows]; fs = [d.f for d in rows]
-            imp = 0.0
-            for i in 2:length(ts)
-                imp += 0.5 * (fs[i] + fs[i-1]) * (ts[i] - ts[i-1])
-            end
-            grav = -p.Bo * (levels[i1].t - levels[i0].t)
-            # THE IDENTITY IS FIXED BY eq:com OF THE PAPER, NOT GUESSED:
-            #     zdot_cm = v,   vdot = (3/2) f - Bo,   f = 2*int_0^{r_c} p r dr,
-            # so dv = (3/2)*Impulse + grav. An earlier version asserted `dv = grav - imp`,
-            # dropping BOTH the 3/2 prefactor and the sign of f. com_force_closed documents
-            # f > 0 as the DECELERATING sense (w > 0 over the patch), and the drop enters with
-            # v < 0, so the contact impulse must RAISE v: the sign was backwards, which is why
-            # this read as +1.36 against -1.03 and looked like a conservation violation.
-            # Measured with the identity written correctly: dv = 1.360515, 1.5*imp + grav =
-            # 1.362265, a relative residual of -1.3e-3 -- set by the trapezoid rule over the
-            # per-step force, not by any physics. The old rtol = 0.15 was loose enough to hide
-            # a 15% momentum leak; 1% is the honest tolerance for this discretisation.
-            @test isapprox(dv, 1.5 * imp + grav; rtol=0.01, atol=0.005)
-            @test imp > 0                    # the force decelerates: positive upward impulse
+            @test dv + p.Bo * (levels[i1].t - levels[i0].t) > 0
         end
     end
 
@@ -244,10 +251,13 @@
     #    factor, which is exactly the failure this file was written after.
     # =========================================================================================
     @testset "contact time is O(t_sigma), within the literature band" begin
-        p = Params(We=1.0958, Bo=0.017, Oh=0.006, b=6.0, h0=3.0, M=30, L=40, N=3, nq=100)
+        # Default truncation: the last assertion below (contact ends before the centre of mass is back at z = R, as
+        # Alventosa et al. observe in experiment) is a property of the resolved model; at M = 30, L = 40 the geometric
+        # end of contact holds on slightly past it.
+        p = Params(We=1.0958, Bo=0.017, Oh=0.006, b=6.0, h0=3.0)
         levels, diag, phases = run_simulation(p; t_end=10.0)
         ts = [l.t for l in levels]
-        tci = contact_time(ts, phases)
+        tci = first(contact_intervals(ts, phases)).duration    # the first contact interval
         @test 1.0 < tci < 10.0
         tct = threshold_contact_time(ts, levels)
         if tct !== nothing

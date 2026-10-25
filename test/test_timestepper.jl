@@ -63,7 +63,11 @@
         # A consistency check on the whole nested step: with the state frozen, shrinking
         # the step must return the contact angle it started from, since the pressure's
         # authority over the geometry scales as dt^2.
-        p = Params(We=1.0, Bo=0.2, Oh=0.05, M=10, L=10, N=1, b=6.0, h0=2.0, nq=20)
+        # LEGACY PATH: this checks selector = :feasible (track A2) as it was validated, with the deprecated
+        # solver = :newton. With the corrected solver the same state has no admissible angle under A2 at all
+        # (FORMULATION.md §3.7), which is a property of A2, not of this consistency check.
+        p = Params(We=1.0, Bo=0.2, Oh=0.05, M=10, L=10, N=1, b=6.0, h0=2.0, nq=20, selector=:feasible,
+                   solver=:newton, contact_end=:force)
         lvl0 = initial_level(p)
         hist = SimHistory(lvl0, lvl0)
         th0 = onset_theta_c(hist, 1e-3, p)
@@ -82,11 +86,12 @@
     end
 
     @testset "contact_step returns a usable Level, with a decelerating force" begin
-        p = Params(We=1.0, Bo=0.2, Oh=0.05, M=10, L=10, N=1, b=6.0, h0=2.0, nq=20)
-        lvl0 = initial_level(p)
-        hist = SimHistory(lvl0, lvl0)
-        th0 = onset_theta_c(hist, 1e-3, p)
-        lvl, info = contact_step(hist, 1e-3, th0, [1e-3, 0.0], p)
+        # A step well into contact at a resolved truncation (see the testset above for why not the first step).
+        p = Params(We=1.0958, Bo=0.017, Oh=0.006, M=60, L=120, N=3, b=6.0, h0=3.0, nq=80)
+        levels, _, phases = run_simulation(p; t_end=0.3)
+        k = findlast(==(InContact), phases)
+        hist = SimHistory(levels[k-1], levels[k])
+        lvl, info = contact_step(hist, 1e-2, levels[k].X[end], levels[k].X[1:p.N+1], p)
         @test lvl !== nothing
         @test all(isfinite, lvl.bath.a)
         @test all(isfinite, lvl.drop.beta)

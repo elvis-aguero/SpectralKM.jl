@@ -59,7 +59,10 @@
         # switching the default, because :crossing does not fix the contact-time overprediction
         # this was originally chased for -- see derivations/tangency-selector.tex.
         @test_broken worst_ratio(th) > 0.5
-        @test_broken maximum(th[max(1, end-3):end]) > 0.01
+        # With the corrected inner solver (solver = :minnorm, the default since the experiment comparison) the patch
+        # still collapses from one step to the next, but it no longer stays collapsed: the permanent collapse
+        # measured above was produced with solver = :newton.
+        @test maximum(th[max(1, end-3):end]) > 0.01
     end
 
     @testset "tangency residual is analytic, not a finite difference" begin
