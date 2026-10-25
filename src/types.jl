@@ -52,6 +52,8 @@ struct Params
     com_nodes::Vector{Float64}
     com_weights::Vector{Float64}
     signorini_nodes::Int
+    solver::Symbol
+    contact_end::Symbol
 end
 
 """
@@ -223,6 +225,17 @@ const DEFAULT_SELECTOR = :crossing
 # differs slightly from one generated before it, and the closure should be named in the text.
 const DEFAULT_VISCOUS = :reid
 
+# INNER SOLVER AND END OF CONTACT. `solver = :newton` is the original Levenberg-Marquardt Newton with an
+# ABSOLUTE residual tolerance, which on the smallest patches returns the starting guess or an unconverged
+# iterate (FORMULATION.md §3.6); `:minnorm` is the scale-invariant minimum-norm Gauss-Newton that solves
+# them. `contact_end = :force` ends contact when the net force stays non-positive for three steps or the
+# patch reaches its floor (Alventosa et al.); `:geometric` ends it exactly when the two surfaces, advanced
+# one step with NO pressure, no longer overlap anywhere -- the zero-patch candidate becomes admissible, as
+# in Agüero et al. (2026), with no condition on the sign of the force. The defaults are chosen by the
+# experiment comparison recorded in FORMULATION.md §3.7 (scripts/score_vs_experiment.jl).
+const DEFAULT_SOLVER = :newton
+const DEFAULT_CONTACT_END = :force
+
 """
     Params(; We, Bo, Oh, b, h0, wall=:free, M, L, N, nq,
              selector=DEFAULT_SELECTOR, viscous=DEFAULT_VISCOUS, check_budget=true)
@@ -301,9 +314,14 @@ the bath eigenvalues and the Fourier-Bessel weight (design doc eq:bessel-norm):
 function Params(; We, Bo, Oh, b, h0, wall::Symbol=:free,
                 M::Integer=DEFAULT_M, L::Integer=DEFAULT_L, N::Integer=DEFAULT_N,
                 nq::Integer=DEFAULT_NQ, selector::Symbol=DEFAULT_SELECTOR,
-                viscous::Symbol=DEFAULT_VISCOUS, check_budget::Bool=true, signorini_nodes::Integer=24)
+                viscous::Symbol=DEFAULT_VISCOUS, check_budget::Bool=true, signorini_nodes::Integer=24,
+                solver::Symbol=DEFAULT_SOLVER, contact_end::Symbol=DEFAULT_CONTACT_END)
     selector in (:crossing, :feasible, :signorini, :tangency) ||
         throw(ArgumentError("selector must be :crossing, :feasible, :signorini or :tangency, got $selector"))
+    solver in (:newton, :minnorm) ||
+        throw(ArgumentError("solver must be :newton or :minnorm, got $solver"))
+    contact_end in (:force, :geometric) ||
+        throw(ArgumentError("contact_end must be :force or :geometric, got $contact_end"))
     wall in (:free, :pinned, :clamped) ||
         throw(ArgumentError("wall must be :free, :pinned or :clamped, got $wall"))
     viscous in (:lamb, :reid) ||
@@ -353,7 +371,7 @@ function Params(; We, Bo, Oh, b, h0, wall::Symbol=:free,
     drop_lambda, drop_omega2 = drop_viscous_coeffs(L, Oh, viscous)
     return Params(We, Bo, Oh, M, L, N, b, h0, nq, selector, viscous, drop_lambda, drop_omega2,
                   wall, kvals, bath_norm, j0kb,
-                  nodes, weights, com_nodes, com_weights, Int(signorini_nodes))
+                  nodes, weights, com_nodes, com_weights, Int(signorini_nodes), solver, contact_end)
 end
 
 """

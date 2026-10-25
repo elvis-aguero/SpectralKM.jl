@@ -91,7 +91,7 @@ suction on its last steps, chatters between contact and free flight and stops at
 FORMULATION.md §3.7.
 """
 function inner_solve(hist::SimHistory, dt::Float64, theta_c::Float64,
-    chat_guess::Vector{Float64}, p::Params; solver=newton_solve)
+    chat_guess::Vector{Float64}, p::Params; solver=(p.solver === :minnorm ? minnorm_gauss_newton : newton_solve))
     kappa, alpha, lambda, gam, kappa_cm, mu = step_affine(hist, dt, p)
     xc = cos(theta_c)
     q = contact_quad(xc, p)
@@ -206,6 +206,13 @@ function select_theta_c(hist::SimHistory, dt::Float64, theta_c_prev::Float64,
         end
     end
     return best
+end
+
+"""Largest gap `C` on `(0, pi/2]` after one step with no pressure; positive means the surfaces would overlap."""
+function free_overlap(hist::SimHistory, dt::Float64, p::Params; nsample::Int=400)
+    trial = free_flight_step(hist, dt, p)
+    return maximum(C_at_theta(trial.bath.a, trial.drop.beta, trial.com.z, th, p)
+                   for th in range(1e-4, π / 2; length=nsample))
 end
 
 """
@@ -425,6 +432,12 @@ function run_simulation(p::Params; t_end::Float64, dt_init::Float64=1e-3,
             continue
         end
 
+        if p.contact_end === :geometric && free_overlap(hist, dt, p) <= 0
+            # the zero-pressure step is admissible: contact ends here, by geometry alone
+            phase = FreeFlight
+            verbose && println("  contact ends (no overlap without pressure) at t=$(round(hist.curr.t,digits=5))")
+            continue
+        end
         level, info = contact_step(hist, dt, theta_c_prev, chat_guess, p; dt_ref=dt_init, onset=onset_step)
         if level === nothing
             if dt > dt_min
@@ -456,7 +469,7 @@ function run_simulation(p::Params; t_end::Float64, dt_init::Float64=1e-3,
         # twenty times what its neighbours in We do. A transient dip is therefore ignored:
         # f must stay non-positive for `n_f_negative` consecutive steps.
         neg_streak = info.f <= 0 ? neg_streak + 1 : 0
-        if neg_streak >= n_f_negative || info.theta_c <= theta_c_floor
+        if p.contact_end === :force && (neg_streak >= n_f_negative || info.theta_c <= theta_c_floor)
             phase = FreeFlight
             dt = dt_init
             just_left = true
