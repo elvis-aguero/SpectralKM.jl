@@ -6,7 +6,7 @@ using SpectralKM: legendre_P, legendre_dP, legendre_P_table, legendre_dP_table, 
     min_nq_for_exact_com, bessel_zeros_J0, residual, unpack_state, contact_quad, step_affine,
     C_at_theta, tangency_residual, check_nonintersect, check_monotone_r, check_positivity,
     Converged, MaxIterExceeded, Stalled, initial_level, gap_at_pole, free_flight_step,
-    contact_step, select_theta_c, feasible_at, onset_theta_c,
+    contact_step, select_theta_c, feasible_at, onset_theta_c, select_theta_c_tangency, max_overlap_beyond,
     xi_of_x, r_of_x, zd_of_x, w_of_x, forward_map_r, forward_map_zd,
     mapped_nodes, legendre_tables, geom_at_nodes, b_l_all,
     com_force_closed, pressure_poly_raw, c_m_all, contact_intervals, primary_contact_time,
@@ -29,6 +29,7 @@ include("test_newton.jl")
 include("test_timestepper.jl")
 include("test_selector.jl")
 include("test_signorini.jl")
+include("test_tangency.jl")
 include("test_reductions.jl")
 include("test_postprocessing.jl")
 include("test_physics.jl")

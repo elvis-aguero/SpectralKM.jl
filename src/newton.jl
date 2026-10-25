@@ -150,3 +150,76 @@ function newton_solve(R, X0::AbstractVector{Float64}; tol_abs::Float64=1e-7,
     end
     return NewtonResult(X, MaxIterExceeded, resid_hist, step_hist, maxiter)
 end
+
+"""
+    minnorm_gauss_newton(R, X0; rtol_ladder=(1e-10, 1e-8, 1e-6, 1e-4, 1e-3), tol=1e-11, maxiter=30) -> NewtonResult
+
+Gauss-Newton for the inner contact system, with each iterate the MINIMUM-NORM solution of the
+linearised problem, `X_{k+1} = J_r^+ (J X_k - R(X_k))`, where `J_r^+` is the pseudo-inverse of
+`J = dR/dX` keeping singular values above `rtol_svd * sigma_max`.
+
+Why not `newton_solve`. That routine accepts an iterate once `‖R‖ < 1e-7` in ABSOLUTE terms. The
+inner residual is a gap moment integrated over the contact patch, so it scales with the patch
+area: on the first contact steps the starting guess (`[1e-3, 0, ...]` at onset) is already below
+`1e-7` and was returned unchanged as `Converged`, and on later early steps the
+Levenberg-Marquardt damping (also absolute, `mu0 = 1e-6` against `J'J ~ 1e-12`) left the iteration
+at its cap with the residual barely reduced. Measured on the water impact We = 1.0958 (M = L = 60,
+N = 3): 2 of 217 contact steps returned the guess and 38 hit the iteration cap; at two of those
+the accepted net force had the wrong sign relative to the actual solution of the same equations.
+
+Why minimum norm. On small patches `J` is genuinely rank-deficient to working precision (measured
+condition numbers 1e8-1e14 for theta_c < 0.05 at M = L = 60): the truncated bath and drop modes
+cannot resolve pressure structure finer than their shortest wavelengths, so some combinations of
+the coefficients change no pressure moment the dynamics see. Those combinations are not
+determined by the equations, and the minimum-norm iterate sets them to zero instead of carrying
+whatever the starting guess or round-off put there. Because the inner map is affine up to the
+mild geometry coupling, the iterate is independent of `X0` and converges in a few steps.
+
+The truncation level is the smallest on `rtol_ladder` at which the iteration converges without
+increasing the residual. A level that keeps nearly-null directions asks for coefficients of order
+1e6 (measured at theta_c = 0.046), the area weight w(x) changes sign under the resulting geometry
+and the iteration fails; the next level up is then taken. Above theta_c ~ 0.1 every level gives the
+same answer (residual 1e-14 relative, identical f); below it the answer depends on the level,
+which is the identifiability limit of the truncated modes, not a solver defect.
+
+Convergence is judged relative to the problem's own scale `s = max(‖R(0)‖, ‖R(X0)‖)` (the gap
+moments with no pressure), not in absolute terms: `‖U_r' R‖ <= tol * s` on the retained subspace and
+a step below `1e-9` relative. `resid_norm_hist` records the full residual, which keeps a component in
+the discarded directions; that component cannot be removed by any bounded pressure.
+"""
+function minnorm_gauss_newton(R, X0::AbstractVector{Float64};
+                              rtol_ladder=(1e-10, 1e-8, 1e-6, 1e-4, 1e-3), kwargs...)
+    local res
+    for rt in rtol_ladder
+        res = _minnorm_gn(R, X0; rtol_svd=rt, kwargs...)
+        res.status == Converged && res.resid_norm_hist[end] <= res.resid_norm_hist[1] && return res
+    end
+    return res
+end
+
+function _minnorm_gn(R, X0::AbstractVector{Float64}; rtol_svd::Float64=1e-10,
+                     tol::Float64=1e-11, maxiter::Int=30)
+    X = copy(X0)
+    Rv = R(X)
+    s = max(norm(R(zero(X))), norm(Rv))
+    resid_hist = Float64[norm(Rv)]
+    step_hist = Float64[]
+    s == 0 && return NewtonResult(zero(X), Converged, resid_hist, step_hist, 0)
+    for iter in 1:maxiter
+        J = ForwardDiff.jacobian(R, X)
+        (all(isfinite, J) && all(isfinite, Rv)) || return NewtonResult(X, Stalled, resid_hist, step_hist, iter - 1)
+        F = svd(J)
+        keep = F.S .> rtol_svd * F.S[1]
+        Ur, Vr, Sr = F.U[:, keep], F.V[:, keep], F.S[keep]
+        Xn = Vr * ((Ur' * (J * X .- Rv)) ./ Sr)
+        Rn = R(Xn)
+        all(isfinite, Rn) || return NewtonResult(X, Stalled, resid_hist, step_hist, iter - 1)
+        step = norm(Xn .- X)
+        push!(step_hist, step); push!(resid_hist, norm(Rn))
+        X, Rv = Xn, Rn
+        if norm(Ur' * Rn) <= tol * s && step <= 1e-9 * max(norm(X), 1e-300)
+            return NewtonResult(X, Converged, resid_hist, step_hist, iter)
+        end
+    end
+    return NewtonResult(X, MaxIterExceeded, resid_hist, step_hist, maxiter)
+end

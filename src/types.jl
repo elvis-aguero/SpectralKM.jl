@@ -302,8 +302,8 @@ function Params(; We, Bo, Oh, b, h0, wall::Symbol=:free,
                 M::Integer=DEFAULT_M, L::Integer=DEFAULT_L, N::Integer=DEFAULT_N,
                 nq::Integer=DEFAULT_NQ, selector::Symbol=DEFAULT_SELECTOR,
                 viscous::Symbol=DEFAULT_VISCOUS, check_budget::Bool=true, signorini_nodes::Integer=24)
-    selector in (:crossing, :feasible, :signorini) ||
-        throw(ArgumentError("selector must be :crossing, :feasible or :signorini, got $selector"))
+    selector in (:crossing, :feasible, :signorini, :tangency) ||
+        throw(ArgumentError("selector must be :crossing, :feasible, :signorini or :tangency, got $selector"))
     wall in (:free, :pinned, :clamped) ||
         throw(ArgumentError("wall must be :free, :pinned or :clamped, got $wall"))
     viscous in (:lamb, :reid) ||

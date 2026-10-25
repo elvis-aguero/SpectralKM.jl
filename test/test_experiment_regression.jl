@@ -98,7 +98,18 @@ else
             c = conditions(drop=f, R=R, V0=sqrt(We_t * f.sigma / (f.rho * R)))
             # DEFAULT numerical settings: only the physics and the bath geometry are named.
             p = Params(c; b=6.0, h0=3.0, selector=REG_SELECTOR)
-            levels, _, phases = run_simulation(p; t_end=14.0)
+            # run_simulation now STOPS (throws) when a rule abandons contact while the surfaces still
+            # overlap, instead of integrating the drop through the bath; that is the same failure as
+            # `tct === nothing` below, recorded as a failed test rather than an error.
+            run = try
+                run_simulation(p; t_end=14.0)
+            catch e
+                @error "run stopped" fluid = which We = We_t selector = REG_SELECTOR exception = e
+                nothing
+            end
+            @test run !== nothing
+            run === nothing && continue
+            levels, _, phases = run
             ts = [l.t for l in levels]
 
             tct = threshold_contact_time(ts, levels)

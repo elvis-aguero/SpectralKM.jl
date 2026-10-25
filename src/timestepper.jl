@@ -78,14 +78,25 @@ Solve the square `N+1` Galerkin system (design doc eq:summary-galerkin) at FIXED
 `theta_c`. Returns the state the solved pressure induces, so the caller can evaluate the
 outer selector and the feasibility filters without recomputing anything. `cm`, `bl` are
 the raw pressure moments (see `unpack_state`), threaded through for convergence studies.
+
+KNOWN DEFECT, KEPT DELIBERATELY FOR NOW. The default `solver = newton_solve` accepts an iterate once
+`‖R‖ < 1e-7` in absolute terms. On small patches (contact onset and the last steps before separation)
+that accepts the starting guess unchanged or an unconverged iterate: measured on the water impact
+We = 1.0958 (M = 160, L = 120), the accepted net force differs from the actual solution of the same
+equations by more than 5% on 14 of 195 contact steps, with the opposite sign on 6, all within the first
+three and the last ten steps. Mid-contact the two agree to < 1%. Passing
+`solver = minnorm_gauss_newton` solves the equations, but then the default `:crossing` rule needs
+suction on its last steps, chatters between contact and free flight and stops at the overlap guard of
+`run_simulation`. Switching the default changes published numbers and is a decision, not a fix; see
+FORMULATION.md §3.7.
 """
 function inner_solve(hist::SimHistory, dt::Float64, theta_c::Float64,
-    chat_guess::Vector{Float64}, p::Params)
+    chat_guess::Vector{Float64}, p::Params; solver=newton_solve)
     kappa, alpha, lambda, gam, kappa_cm, mu = step_affine(hist, dt, p)
     xc = cos(theta_c)
     q = contact_quad(xc, p)
     R = chat -> residual(chat, xc, q, kappa, alpha, lambda, gam, kappa_cm, mu, p)
-    result = newton_solve(R, chat_guess)
+    result = solver(R, chat_guess)
     am, beta, zcm, f, cm, bl = unpack_state(result.X, xc, q, kappa, alpha, lambda, gam, kappa_cm, mu, p)
     return result.X, result, am, beta, zcm, f, cm, bl
 end
@@ -200,23 +211,24 @@ end
 """
     onset_theta_c(hist, dt, p; nsample=400) -> Union{Nothing,Float64}
 
-Seed for the FIRST contact step only. `T` vanishes identically at `theta_c = 0`
-(eq:tangency-degenerate), so the argmin selector is uninformative there; instead locate
-the geometric crossing `C(theta) = 0` of the two free-flight-advanced surfaces, which is
-non-degenerate at onset. Returns `nothing` if no crossing exists (not yet in contact).
+Seed for the FIRST contact step. Contact begins when the two surfaces, advanced one step without
+pressure, overlap ANYWHERE on `(0, pi/2]` -- not only at the pole: an overlap away from the axis was
+previously missed, and nothing else stops the drop moving through the bath in free flight. The seed
+is the outer edge of the overlap, the largest `theta` at which `C` passes from positive to
+non-positive (`THETA_C_SAT` if the overlap reaches the equator). For the usual first touch at the
+pole this is the first crossing, as before. `theta = 0` is never a candidate: the overlap that
+triggers onset is exactly the statement that a zero patch violates no-overlap. Returns `nothing` if
+the surfaces do not overlap.
 """
 function onset_theta_c(hist::SimHistory, dt::Float64, p::Params; nsample::Int=400)
     trial = free_flight_step(hist, dt, p)
     am, beta, zcm = trial.bath.a, trial.drop.beta, trial.com.z
     thetas = range(1e-4, π / 2; length=nsample)
-    Cprev = C_at_theta(am, beta, zcm, first(thetas), p)
-    Cprev <= 0 && return nothing          # pole not penetrating: no contact yet
-    for theta in Iterators.drop(thetas, 1)
-        Cnow = C_at_theta(am, beta, zcm, theta, p)
-        Cnow <= 0 && return theta
-        Cprev = Cnow
-    end
-    return nothing
+    Cs = [C_at_theta(am, beta, zcm, th, p) for th in thetas]
+    any(>(0), Cs) || return nothing
+    Cs[end] > 0 && return THETA_C_SAT
+    i = findlast(j -> Cs[j] > 0 && Cs[j+1] <= 0, 1:length(Cs)-1)
+    return min(thetas[i+1], THETA_C_SAT)
 end
 
 """
@@ -305,11 +317,13 @@ Returns `nothing` if no admissible angle exists at this `dt`, which the caller t
 a signal to reduce `dt` and retry.
 """
 function contact_step(hist::SimHistory, dt::Float64, theta_c_prev::Float64,
-    chat_guess::Vector{Float64}, p::Params; dt_ref::Float64=1e-3)
+    chat_guess::Vector{Float64}, p::Params; dt_ref::Float64=1e-3, onset::Bool=false)
     best = if p.selector === :signorini
         select_signorini(hist, dt, p)
     elseif p.selector === :crossing
         select_theta_c_crossing(hist, dt, theta_c_prev, chat_guess, p)
+    elseif p.selector === :tangency
+        select_theta_c_tangency(hist, dt, theta_c_prev, chat_guess, p; onset=onset)
     else
         select_theta_c(hist, dt, theta_c_prev, chat_guess, p; dt_ref=dt_ref)
     end
@@ -362,6 +376,8 @@ function run_simulation(p::Params; t_end::Float64, dt_init::Float64=1e-3,
     chat_guess = zeros(p.N + 1)
     nsteps = 0
     just_left = false
+    lost_by_failure = false
+    onset_step = false
     neg_streak = 0
     while hist.curr.t < t_end && nsteps < 200_000
         nsteps += 1
@@ -374,9 +390,22 @@ function run_simulation(p::Params; t_end::Float64, dt_init::Float64=1e-3,
             # onset is immediately re-detected at the SAME t, and the loop spins with no
             # time advance -- observed directly before this guard was added.
             th = just_left ? nothing : onset_theta_c(hist, dt, p)
-            just_left = false
             if th === nothing
                 trial = free_flight_step(hist, dt, p)
+                # A contact that ended because no edge was admissible at the smallest step, followed by a
+                # free-flight step in which the surfaces overlap, means the contact rule has abandoned a
+                # drop that is still inside the bath. Continuing would integrate it straight through the
+                # bath (measured: selector = :feasible at oil We = 7.307 reaches z_cm = -14 by t = 7).
+                if just_left && lost_by_failure
+                    ovl = maximum(C_at_theta(trial.bath.a, trial.drop.beta, trial.com.z, th_, p)
+                                  for th_ in range(1e-4, π / 2; length=400))
+                    ovl > 1e-9 && error("selector=$(p.selector): contact was lost at t = $(round(hist.curr.t, digits=5)) " *
+                                        "with no admissible contact edge at dt_min, and the surfaces still overlap " *
+                                        "(max C = $(round(ovl, sigdigits=3))). Stopping rather than integrating " *
+                                        "the drop through the bath.")
+                end
+                just_left = false
+                lost_by_failure = false
                 hist.prev = hist.curr; hist.curr = trial
                 push!(levels, trial)
                 push!(phases, FreeFlight)
@@ -386,6 +415,7 @@ function run_simulation(p::Params; t_end::Float64, dt_init::Float64=1e-3,
                 # to the true onset instant as the step floor allows, then hand the
                 # geometric seed to the argmin selector from the next step on.
                 theta_c_prev = th
+                onset_step = true
                 neg_streak = 0
                 chat_guess = zeros(p.N + 1)
                 chat_guess[1] = 1e-3
@@ -395,7 +425,7 @@ function run_simulation(p::Params; t_end::Float64, dt_init::Float64=1e-3,
             continue
         end
 
-        level, info = contact_step(hist, dt, theta_c_prev, chat_guess, p; dt_ref=dt_init)
+        level, info = contact_step(hist, dt, theta_c_prev, chat_guess, p; dt_ref=dt_init, onset=onset_step)
         if level === nothing
             if dt > dt_min
                 dt /= 2
@@ -404,6 +434,7 @@ function run_simulation(p::Params; t_end::Float64, dt_init::Float64=1e-3,
             phase = FreeFlight
             dt = dt_init
             just_left = true
+            lost_by_failure = true
             verbose && println("  contact lost (no admissible theta_c) at t=$(round(hist.curr.t,digits=5))")
             continue
         end
@@ -439,6 +470,7 @@ function run_simulation(p::Params; t_end::Float64, dt_init::Float64=1e-3,
         push!(phases, InContact)
         push!(diag, merge(info, (; t=level.t, dt=dt, z=level.com.z, v=level.com.v)))
         theta_c_prev = info.theta_c
+        onset_step = false
         chat_guess = level.X[1:p.N+1]
         verbose && println("  t=$(round(level.t,digits=5)) dt=$(round(dt,sigdigits=2)) " *
                            "th_c=$(round(info.theta_c,digits=4)) f=$(round(info.f,sigdigits=3)) " *
